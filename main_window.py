@@ -6,7 +6,7 @@ from video_widget import VideoWidget
 from get_camera import Camera
 from some_functions import toQImage, resizeImage
 from main_widget import MainWidget
-
+import cv2
 import sys
 sys.path.append('expression_code/')
 import main_expression
@@ -16,6 +16,8 @@ import numpy as np
 
 
 class MainWindow(QMainWindow):
+
+    dictionary_data = {}
 
     def __init__(self):
         super().__init__()
@@ -87,7 +89,7 @@ class MainWindow(QMainWindow):
         self.portrait = self.camera.get_current_frame()
         self.portrait = resizeImage(self.portrait, 250)
         scipy.misc.imsave('expression_code/imgs/outfile.jpg', self.portrait)
-        self.portrait = main_expression.apply_expression('expression_code/imgs/outfile.jpg',
+        self.portrait, self.dictionary_data = main_expression.apply_expression('expression_code/imgs/outfile.jpg',
                                                          expression=self.expression)
         self.portrait = resizeImage(self.portrait, 600)
         self.portrait = np.require(self.portrait, np.uint8, 'C')
@@ -98,11 +100,14 @@ class MainWindow(QMainWindow):
     def combo_changed(self, text):
         self.expression = text.lower()
         if self.picture_taken:
-            self.portrait = main_expression.apply_expression('expression_code/imgs/outfile.jpg',
-                                                             expression=self.expression)
+            #self.portrait = main_expression.apply_expression('expression_code/imgs/outfile.jpg',
+             #                                                expression=self.expression)
+
+            self.portait, self.dictionary_data = main_expression.apply_expression_modelPreloaded(self.dictionary_data, expression=self.expression)
+            cv2.imshow('image',self.portait)
             self.portrait = resizeImage(self.portrait, 600)
             self.portrait = np.require(self.portrait, np.uint8, 'C')
             qim = toQImage(self.portrait)  # first convert to QImage
             qpix = QPixmap.fromImage(qim)  # then convert to QPixmap
             self.right_label.setPixmap(qpix)
-        print(self.expression)
+        #print(self.expression)
