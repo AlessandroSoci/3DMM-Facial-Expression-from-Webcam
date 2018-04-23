@@ -31,7 +31,9 @@ class MainWindow(QMainWindow):
         self.toolbar = self.addToolBar('Main Window')
         self.toolbar_emotions = self.addToolBar('Emotions')
 
-        self.portrait = 0
+        self.expression = "surprise"
+        self.picture_taken = False
+        self.portrait = None
         self.setCentralWidget(self.main_widget)
         self.initUI()
 
@@ -41,21 +43,32 @@ class MainWindow(QMainWindow):
 
     def build_toolbar(self):
 
+        slide_bar = QSlider(Qt.Horizontal)
+        slide_bar.setMinimum(0)
+        slide_bar.setMaximum(8)
+        slide_bar.setValue(1)
+        # slide_bar.setTickPosition(QSlider.TicksBelow)
+        # slide_bar.setTickInterval(1)
+        slide_bar.valueChanged.connect(self.camera.setZoom)
+        self.toolbar.addWidget(slide_bar)
+
         take_photo = QAction(QIcon('images/get_photo.png'), 'Take_Picture', self)
         take_photo.setShortcut('Ctrl+Q')
         take_photo.triggered.connect(self.on_click)
         self.toolbar.addAction(take_photo)
 
+
         # build slide fo upload pre-built patterns.looking for the pattern class
         combo_box = QComboBox(self)
         combo_box.addItem("Surprise")
         combo_box.addItem("Happy")
-        combo_box.addItem("Sad")
+        combo_box.addItem("Contempt")
+        combo_box.addItem("Sadness")
+        combo_box.addItem("Disgust")
         combo_box.addItem("Angry")
-        combo_box.addItem("Afraid")
+        combo_box.addItem("Fear")
         self.toolbar_emotions.addWidget(combo_box)
-        self.toolbar_emotions.setHidden(True)
-        combo_box.activated[str].connect(self.centralWidget().combo_changed)
+        combo_box.activated[str].connect(self.combo_changed)
 
     def activate(self):
         self.main_widget.activate()
@@ -70,13 +83,26 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def on_click(self):
-        self.toolbar_emotions.setHidden(False)
+        self.picture_taken = True
         self.portrait = self.camera.get_current_frame()
         self.portrait = resizeImage(self.portrait, 250)
         scipy.misc.imsave('expression_code/imgs/outfile.jpg', self.portrait)
-        self.portrait = main_expression.apply_expression('expression_code/imgs/outfile.jpg', expression='surprise')
+        self.portrait = main_expression.apply_expression('expression_code/imgs/outfile.jpg',
+                                                         expression=self.expression)
         self.portrait = resizeImage(self.portrait, 600)
         self.portrait = np.require(self.portrait, np.uint8, 'C')
         qim = toQImage(self.portrait)  # first convert to QImage
         qpix = QPixmap.fromImage(qim)  # then convert to QPixmap
         self.right_label.setPixmap(qpix)
+
+    def combo_changed(self, text):
+        self.expression = text.lower()
+        if self.picture_taken:
+            self.portrait = main_expression.apply_expression('expression_code/imgs/outfile.jpg',
+                                                             expression=self.expression)
+            self.portrait = resizeImage(self.portrait, 600)
+            self.portrait = np.require(self.portrait, np.uint8, 'C')
+            qim = toQImage(self.portrait)  # first convert to QImage
+            qpix = QPixmap.fromImage(qim)  # then convert to QPixmap
+            self.right_label.setPixmap(qpix)
+        print(self.expression)

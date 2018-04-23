@@ -35,30 +35,9 @@ class MainWidget(QWidget):
         h.addWidget(self.right_label)
         self.setLayout(h)
 
-        # self.take_photo.setToolTip('Take Photo')
-        # self.take_photo.move(600, 300)
-        # self.get_photo.clicked.connect(self.on_click)
-
     def activate(self):
         self.video_widget.activate()
 
     def deactivate(self):
         self.hide()
         self.video_widget.deactivate()
-
-    def combo_changed(self, text):
-        print(text)
-        # First of all clear the board
-        # self.clearBoard()
-        # patternSetter = Pattern(self.grid)
-        # lookign for pattern class
-        # if text == 'Glider':
-        #     patternSetter.Glider()
-        # if text == 'Small Exploder':
-        #     patternSetter.smallExploder()
-        # if text == 'Exploder':
-        #     patternSetter.exploder()
-        # if text == '10 Cell Row':
-        #     patternSetter.cellRow()
-        # if text == 'Tumbler':
-        #     patternSetter.tumbler()

@@ -1,4 +1,4 @@
-from get_camera import *
+from PyQt5.QtWidgets import QApplication
 from main_window import MainWindow
 import sys
 import qdarkstyle

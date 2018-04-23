@@ -1,11 +1,7 @@
+from PyQt5.QtCore import pyqtSignal, QThread
+
 import numpy as np
 import cv2
-from video_widget import VideoWidget
-
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLineEdit, QLabel, QDialog, QDialogButtonBox, QVBoxLayout, QHBoxLayout, QTableView, QSizePolicy, QMessageBox
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot, pyqtSignal
-from PyQt5.QtCore import Qt, QFileInfo, QUrl, QFile, QObject, pyqtSignal, QThread
 
 
 class Camera(QThread):
@@ -33,6 +29,9 @@ class Camera(QThread):
     def loop(self):
         """Method called to initialize and start the face recognition Thread"""
         self.start()
+
+    def setZoom(self, value):
+        self.zoom = round(1 + value/10, 1)
 
     def run(self):
         """Main loop of this Thread"""
