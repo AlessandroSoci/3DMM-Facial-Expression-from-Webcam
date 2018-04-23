@@ -88,6 +88,7 @@ def apply_expression(original_image_path, path_log = 'log/', expression='angry')
 	# create texture for neutral model
 	projShape = np.transpose(_3DMM_obj.getProjectedVertex(np.transpose(shape_neutral_model), pos_est["S"], pos_est["R"], pos_est["T"]))
 	texture_neutral_model = (_graph_tools_obj.getRGBtexture(projShape, image))*255
+	projShape_neutral = projShape
 
 	# create texture for expressional model
 	projShape = np.transpose(_3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), pos_est["S"], pos_est["R"], pos_est["T"]))
@@ -96,9 +97,20 @@ def apply_expression(original_image_path, path_log = 'log/', expression='angry')
 	# posso prendere il modello con maggiore risoluzione solo del modello neutro
 
 	#projShape = np.transpose(_3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), pos_est["S"], pos_est["R"], pos_est["T"]))
-	image = _graph_tools_obj.render3DMM(projShape[:,0], projShape[:,1], texture_neutral_model, 250, 250)
+	image = _graph_tools_obj.render3DMM(projShape[:,0], projShape[:,1], texture_neutral_model, 512, 512)
 
-	fExp.create_dataset("neutral_shape", data=shape_neutral_model)
+	# save date for re create model withou re doing neutral model
+	dictionary_data = {
+			'shape_neutral': shape_neutral_model,
+			'projShape_neutral': projShape_neutral,
+			'texture_neutral': texture_neutral_model,
+			'components': Components,
+			'pos_est_S': pos_est["S"],
+			'pos_est_R': pos_est["R"],
+			'pos_est_T': pos_est["T"],
+			'visIdx': pos_est["visIdx"]
+	}	
+	
 	# to create 2D image
 	fExp.create_dataset("expressional_shape", data=shape_expressional_model)
 	fExp.create_dataset("neutral_text", data=np.transpose(texture_neutral_model))
@@ -110,10 +122,32 @@ def apply_expression(original_image_path, path_log = 'log/', expression='angry')
 	fExp.create_dataset("image", data=np.transpose(image))
 
 	fExp.close()
-
-	return image
 	print('SAVED')
 
+	return image, dictionary_data
+	
+
+def apply_expression_modelPreloaded(dict_, path_log = 'log/', expression='angry'):
+	# define RP values
+	RP_obj = RP()
+	# Fitting and pose estimation are within the 3DMM obj
+	_3DMM_obj = _3DMM()
+	_graph_tools_obj = graphic_tools(_3DMM_obj)
+
+	# add expression to neutral face
+	exprObj = predict_expr()
+	vect, nameExpr = predict_expr.create_expr(expression)
+	print(nameExpr)
+	shape_expressional_model = np.transpose(_3DMM_obj.deform_3D_shape_fast(np.transpose(dict_['shape_neutral']), dict_['components'], vect))
+
+	# create texture for expressional model
+	projShape = np.transpose(_3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), dict_['pos_est_S'], dict_['pos_est_R'], dict_['pos_est_T']))
+	#texture_expressional_model = (_graph_tools_obj.getRGBtexture(projShape, image))*255
+	#[frontalView, colors, mod3d] = _graph_tools_obj.renderFaceLossLess(shape_expressional_model, projShape, image,  dict_['pos_est_S'], dict_['pos_est_R'], dict_['pos_est_T'], 1, dict_['visIdx'])
+	image = _graph_tools_obj.render3DMM(projShape[:,0], projShape[:,1], dict_['texture_neutral'], 512, 512)
+
+
+	return image, dict_
 
 
 
