@@ -7,7 +7,6 @@ import cv2
 class Camera(QThread):
 
     updated = pyqtSignal()  # in order to work it has to be defined out of the constructor
-    person_identified = pyqtSignal()  # in order to work it has to be defined out of the constructor
 
     def __init__(self):
         super().__init__()

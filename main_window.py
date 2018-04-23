@@ -2,15 +2,17 @@ from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, qApp, QMainWindow, QHB
 from PyQt5 import QtGui
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt
-from video_widget import VideoWidget
 from get_camera import Camera
+from video_widget import VideoWidget
+from right_label import RightLabel
 from some_functions import toQImage, resizeImage
 from main_widget import MainWidget
+
+from expression_code.main_expression import *
+
 import cv2
 import sys
 sys.path.append('expression_code/')
-import main_expression
-
 import scipy.misc
 import numpy as np
 
@@ -26,9 +28,6 @@ class MainWindow(QMainWindow):
         self.setFixedSize(1200, 700)
 
         self.camera = Camera()
-        self.video_widget = VideoWidget(self.camera)
-        self.right_label = QLabel(self)
-        self.main_widget = MainWidget(self.video_widget, self.right_label, self.camera)
 
         self.toolbar = self.addToolBar('Main Window')
         self.toolbar_emotions = self.addToolBar('Emotions')
@@ -36,7 +35,12 @@ class MainWindow(QMainWindow):
         self.expression = "surprise"
         self.picture_taken = False
         self.portrait = None
+        self.model = Model(None, self.expression)
+        self.video_widget = VideoWidget(self.camera)
+        self.right_label = RightLabel(self, self.model)
+        self.main_widget = MainWidget(self.video_widget, self.right_label, self.camera)
         self.setCentralWidget(self.main_widget)
+
         self.initUI()
 
     def initUI(self):
@@ -48,7 +52,7 @@ class MainWindow(QMainWindow):
         slide_bar = QSlider(Qt.Horizontal)
         slide_bar.setMinimum(0)
         slide_bar.setMaximum(8)
-        slide_bar.setValue(1)
+        slide_bar.setValue(0)
         # slide_bar.setTickPosition(QSlider.TicksBelow)
         # slide_bar.setTickInterval(1)
         slide_bar.valueChanged.connect(self.camera.setZoom)
@@ -87,27 +91,23 @@ class MainWindow(QMainWindow):
     def on_click(self):
         self.picture_taken = True
         self.portrait = self.camera.get_current_frame()
-        self.portrait = resizeImage(self.portrait, 250)
+        self.portrait = resizeImage(self.portrait, 512)
         scipy.misc.imsave('expression_code/imgs/outfile.jpg', self.portrait)
-        self.portrait, self.dictionary_data = main_expression.apply_expression('expression_code/imgs/outfile.jpg',
-                                                         expression=self.expression)
-        self.portrait = resizeImage(self.portrait, 600)
-        self.portrait = np.require(self.portrait, np.uint8, 'C')
-        qim = toQImage(self.portrait)  # first convert to QImage
-        qpix = QPixmap.fromImage(qim)  # then convert to QPixmap
-        self.right_label.setPixmap(qpix)
+        self.model.set_image('expression_code/imgs/outfile.jpg')
+        self.right_label.activate()
+        # self.portrait, self.dictionary_data = apply_expression('expression_code/imgs/outfile.jpg', expression=self.expression)
+        # self.portrait = resizeImage(self.portrait, 600)
+        # self.portrait = np.require(self.portrait, np.uint8, 'C')
+        # qim = toQImage(self.portrait)  # first convert to QImage
+        # qpix = QPixmap.fromImage(qim)  # then convert to QPixmap
+        # self.right_label.setPixmap(qpix)
 
     def combo_changed(self, text):
         self.expression = text.lower()
         if self.picture_taken:
-            #self.portrait = main_expression.apply_expression('expression_code/imgs/outfile.jpg',
-             #                                                expression=self.expression)
-
-            self.portait, self.dictionary_data = main_expression.apply_expression_modelPreloaded(self.dictionary_data, expression=self.expression)
-            cv2.imshow('image',self.portait)
+            self.portrait, self.dictionary_data = apply_expression_modelPreloaded(self.dictionary_data, expression=self.expression)
             self.portrait = resizeImage(self.portrait, 600)
             self.portrait = np.require(self.portrait, np.uint8, 'C')
             qim = toQImage(self.portrait)  # first convert to QImage
             qpix = QPixmap.fromImage(qim)  # then convert to QPixmap
             self.right_label.setPixmap(qpix)
-        #print(self.expression)

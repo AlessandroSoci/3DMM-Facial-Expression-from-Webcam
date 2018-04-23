@@ -3,6 +3,7 @@ from PyQt5 import QtGui
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt
 from video_widget import VideoWidget
+from right_label import RightLabel
 from get_camera import Camera
 from some_functions import resizeImage, toQImage
 
@@ -13,13 +14,13 @@ import numpy as np
 
 class MainWidget(QWidget):
 
-    def __init__(self, video_widget, right_widget, camera):
+    def __init__(self, video_widget, right_label, camera):
         super().__init__()
         self.setGeometry(100, 100, 1200, 600)
 
         self.camera = camera
         self.video_widget = video_widget
-        self.right_label = right_widget
+        self.right_label = right_label
 
         self.portrait = 0
 
