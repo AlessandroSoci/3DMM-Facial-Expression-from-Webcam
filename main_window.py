@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
         self.toolbar = self.addToolBar('Main Window')
         self.toolbar_emotions = self.addToolBar('Emotions')
 
-        self.expression = "surprise"
+        self.expression = "neutral"
         self.picture_taken = False
         self.portrait = None
         self.model = Model(None, self.expression)
@@ -63,9 +63,9 @@ class MainWindow(QMainWindow):
         take_photo.triggered.connect(self.on_click)
         self.toolbar.addAction(take_photo)
 
-
         # build slide fo upload pre-built patterns.looking for the pattern class
         combo_box = QComboBox(self)
+        combo_box.addItem("Neutral")
         combo_box.addItem("Surprise")
         combo_box.addItem("Happy")
         combo_box.addItem("Contempt")
@@ -103,9 +103,10 @@ class MainWindow(QMainWindow):
         # self.right_label.setPixmap(qpix)
 
     def combo_changed(self, text):
-        self.expression = text.lower()
+        # from the first time no needed to re taken the photo, use the old 3D neutral model
         if self.picture_taken:
-            self.portrait, self.dictionary_data = apply_expression_modelPreloaded(self.dictionary_data, expression=self.expression)
+            #self.portrait, self.dictionary_data = apply_expression_modelPreloaded(self.dictionary_data, expression=self.expression)
+            self.model.run(first_photo=False, expr=text.lower())
             self.portrait = resizeImage(self.portrait, 600)
             self.portrait = np.require(self.portrait, np.uint8, 'C')
             qim = toQImage(self.portrait)  # first convert to QImage
