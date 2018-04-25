@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, qApp, QMainWindow, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QSizePolicy, QSlider)
+from PyQt5.QtWidgets import (QWidget, QComboBox, QAction, qApp, QMainWindow, QHBoxLayout, QVBoxLayout, QLabel, QSizePolicy, QSlider, QProgressBar)
 from PyQt5 import QtGui
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt
@@ -28,14 +28,16 @@ class MainWindow(QMainWindow):
         self.setFixedSize(1200, 700)
 
         self.camera = Camera()
+        self.progress_bar = QProgressBar(self)
 
         self.toolbar = self.addToolBar('Main Window')
-        self.toolbar_emotions = self.addToolBar('Emotions')
+        # self.toolbar_emotions = self.addToolBar('Emotions')
 
         self.expression = "neutral"
         self.picture_taken = False
+        self.bool_onclick = None
         self.portrait = None
-        self.model = Model(None, self.expression)
+        self.model = Model(None, self.expression, self)
         self.video_widget = VideoWidget(self.camera)
         self.right_label = RightLabel(self, self.model)
         self.main_widget = MainWidget(self.video_widget, self.right_label, self.camera)
@@ -47,14 +49,21 @@ class MainWindow(QMainWindow):
         self.build_toolbar()
         # self.addToolBarBreak()
 
+    def get_expression(self):
+        return self.expression
+
+    def get_bool_onclick(self):
+        return self.bool_onclick
+
+    def set_progress_bar(self, value):
+        self.progress_bar.setValue(value)
+
     def build_toolbar(self):
 
         slide_bar = QSlider(Qt.Horizontal)
         slide_bar.setMinimum(0)
         slide_bar.setMaximum(8)
         slide_bar.setValue(0)
-        # slide_bar.setTickPosition(QSlider.TicksBelow)
-        # slide_bar.setTickInterval(1)
         slide_bar.valueChanged.connect(self.camera.setZoom)
         self.toolbar.addWidget(slide_bar)
 
@@ -62,6 +71,11 @@ class MainWindow(QMainWindow):
         take_photo.setShortcut('Ctrl+Q')
         take_photo.triggered.connect(self.on_click)
         self.toolbar.addAction(take_photo)
+        
+        # self.progress_bar.setHidden(True)
+        self.toolbar.addWidget(self.progress_bar)
+
+        self.toolbar.addSeparator()
 
         # build slide fo upload pre-built patterns.looking for the pattern class
         combo_box = QComboBox(self)
@@ -73,8 +87,9 @@ class MainWindow(QMainWindow):
         combo_box.addItem("Disgust")
         combo_box.addItem("Angry")
         combo_box.addItem("Fear")
-        self.toolbar_emotions.addWidget(combo_box)
+        self.toolbar.addWidget(combo_box)
         combo_box.activated[str].connect(self.combo_changed)
+        self.toolbar.addSeparator()
 
     def activate(self):
         self.main_widget.activate()
@@ -89,26 +104,17 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def on_click(self):
+        # self.progress_bar.setHidden(False)
         self.picture_taken = True
+        self.bool_onclick = True
         self.portrait = self.camera.get_current_frame()
         self.portrait = resizeImage(self.portrait, 512)
         scipy.misc.imsave('expression_code/imgs/outfile.jpg', self.portrait)
         self.model.set_image('expression_code/imgs/outfile.jpg')
         self.right_label.activate()
-        # self.portrait, self.dictionary_data = apply_expression('expression_code/imgs/outfile.jpg', expression=self.expression)
-        # self.portrait = resizeImage(self.portrait, 600)
-        # self.portrait = np.require(self.portrait, np.uint8, 'C')
-        # qim = toQImage(self.portrait)  # first convert to QImage
-        # qpix = QPixmap.fromImage(qim)  # then convert to QPixmap
-        # self.right_label.setPixmap(qpix)
 
     def combo_changed(self, text):
-        # from the first time no needed to re taken the photo, use the old 3D neutral model
+        self.bool_onclick = False
+        self.expression = text.lower()
         if self.picture_taken:
-            #self.portrait, self.dictionary_data = apply_expression_modelPreloaded(self.dictionary_data, expression=self.expression)
-            self.model.run(first_photo=False, expr=text.lower())
-            self.portrait = resizeImage(self.portrait, 600)
-            self.portrait = np.require(self.portrait, np.uint8, 'C')
-            qim = toQImage(self.portrait)  # first convert to QImage
-            qpix = QPixmap.fromImage(qim)  # then convert to QPixmap
-            self.right_label.setPixmap(qpix)
+            self.right_label.activate()
