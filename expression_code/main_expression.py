@@ -4,6 +4,7 @@ import sys
 sys.path.append('expression_code/')
 from PIL import Image
 import numpy as np
+import  scipy.misc
 from PyQt5.QtCore import pyqtSignal, QThread
 from landmark_detect import Detector
 from _3DMM import _3DMM
@@ -12,25 +13,27 @@ from util_for_graphic import graphic_tools
 from Matrix_operations import Matrix_op
 from Matrix_operations import Vector_op
 from create_expression import predict_expr
-import scipy.misc
 
 
 class Model(QThread):
 
     updated = pyqtSignal()  # in order to work it has to be defined out of the constructor
 
-    def __init__(self, image, expression):
+    def __init__(self, image, expression, main_window):
         super().__init__()
         self.image_path = image
         self.image = None
         self.expression = expression
-        self.dictionary_neutral_model = None
-
-    def get_model(self):
-        return self.model_2D
+        self.dictionary = None
+        self.take_photo = True
+        self.onclick = None
+        self.mw = main_window
 
     def get_image(self):
         return self.image
+
+    def get_dictionary(self):
+        return self.dictionary
 
     def set_image(self, image):
         self.image_path = image
@@ -39,18 +42,19 @@ class Model(QThread):
         if self.isRunning():
             self.terminate()
 
-    def run(self, first_photo=True, expr=None):
-        if first_photo:
+    def run(self):
+        self.expression = self.mw.get_expression()
+        self.onclick = self.mw.get_bool_onclick()
+        if self.onclick:
             self.image = self.apply_expression(self.image_path, expression=self.expression)
         else:
-            self.image = self.apply_expression_modelPreloaded(expression=expr)
+            self.image = self.apply_expression_modelPreloaded(expression=self.expression)
         self.updated.emit()
 
     def apply_expression(self, original_image_path, path_log='log/', expression='angry'):
         # start from the 2D IMAGE. Compute the landmarks on the face within the image and compute
         # the 3DMM, then apply the selected expresison and return the 2D image midifed.
 
-        # original_image_path = 'expression_code/imgs/outfile.jpg'
         remove_boundary = False
         # lambda_opt = 0.01
         # vars for 3DMM pose and fitting
@@ -125,7 +129,7 @@ class Model(QThread):
         texture_neutral_model = (_graph_tools_obj.getRGBtexture(projShape, image)) * 255
         projShape_neutral = projShape
 
-        self.dictionary_neutral_model = {
+        self.dictionary = {
             'shape_neutral': shape_neutral_model,
             'projShape_neutral': projShape_neutral,
             'texture_neutral': texture_neutral_model,
@@ -133,17 +137,17 @@ class Model(QThread):
             'pos_est_S': pos_est["S"],
             'pos_est_R': pos_est["R"],
             'pos_est_T': pos_est["T"],
-            'visIdx': pos_est["visIdx"] 
+            'visIdx': pos_est["visIdx"]
         }
 
         if expression == 'neutral':
-            if 'image_neutral' in self.dictionary_neutral_model:
-                return self.dictionary_neutral_model['image_neutral']
+            if 'image_neutral' in self.dictionary:
+                return self.dictionary['image_neutral']
             else:
                 image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], texture_neutral_model, 512, 512)
-                self.dictionary_neutral_model['image_neutral'] = image
+                self.dictionary['image_neutral'] = image
                 return image
-            
+        self.mw.set_progress_bar(0)
         # add expression to neutral face
         exprObj = predict_expr()
         vect, nameExpr = predict_expr.create_expr(expression)
@@ -152,13 +156,15 @@ class Model(QThread):
         shape_expressional_model = np.transpose(new_expr)
 
         # create texture for expressional model
+        self.mw.set_progress_bar(35)
         projShape = np.transpose(
-            _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), pos_est["S"], pos_est["R"], pos_est["T"]))        
-
+            _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), pos_est["S"], pos_est["R"],
+                                         pos_est["T"]))
+        self.mw.set_progress_bar(50)
         image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], texture_neutral_model, 512, 512)
-
+        self.mw.set_progress_bar(95)
         scipy.misc.imsave('porcodio.jpg', image)
-
+        self.mw.set_progress_bar(100)
         '''
         fExp.create_dataset("expressional_shape", data=shape_expressional_model)
         fExp.close()
@@ -169,8 +175,9 @@ class Model(QThread):
 
 
     def apply_expression_modelPreloaded(self, path_log='log/', expression='angry'):
+        self.mw.set_progress_bar(0)
         if expression == 'neutral':
-            return self.dictionary_neutral_model['image_neutral']
+            return self.dictionary['image_neutral']
         # define RP values
         RP_obj = RP()
         # Fitting and pose estimation are within the 3DMM obj
@@ -180,16 +187,18 @@ class Model(QThread):
         # add expression to neutral face
         exprObj = predict_expr()
         vect, nameExpr = predict_expr.create_expr(expression)
+        print(nameExpr)
         shape_expressional_model = np.transpose(
-            _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary_neutral_model['shape_neutral']), self.dictionary_neutral_model['components'], vect))
-
+            _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']), self.dictionary['components'], vect))
+        self.mw.set_progress_bar(50)
         # create texture for expressional model
         projShape = np.transpose(
-            _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), self.dictionary_neutral_model['pos_est_S'], self.dictionary_neutral_model['pos_est_R'],
-                                         self.dictionary_neutral_model['pos_est_T']))
+            _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), self.dictionary['pos_est_S'], self.dictionary['pos_est_R'],
+                                         self.dictionary['pos_est_T']))
         # texture_expressional_model = (_graph_tools_obj.getRGBtexture(projShape, image))*255
         # [frontalView, colors, mod3d] = _graph_tools_obj.renderFaceLossLess(shape_expressional_model, projShape, image,  dict_['pos_est_S'], dict_['pos_est_R'], dict_['pos_est_T'], 1, dict_['visIdx'])
-        image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], self.dictionary_neutral_model['texture_neutral'], 512, 512)
+        image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], self.dictionary['texture_neutral'], 512, 512)
+        self.mw.set_progress_bar(100)
 
         return image
 
