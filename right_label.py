@@ -16,6 +16,7 @@ class RightLabel(QLabel):
 
         self.model = model
         self.image = None
+        self.dictionary = None
 
         self.model.updated.connect(self.new_image, type=Qt.QueuedConnection)
         self.active.connect(self.model.start, type=Qt.QueuedConnection)
@@ -27,12 +28,16 @@ class RightLabel(QLabel):
     def deactivate(self):
         self.non_active.emit()
 
+    # def wait_(self):
+    def get_dictionary(self):
+        return self.dictionary
+
     def set_model(self, model):
         self.model = model
 
     def new_image(self):
         self.image = self.model.get_image()
-        print(self.image.shape)
+        self.dictionary = self.model.get_dictionary()
         self.update_view()
 
     def update_view(self):
