@@ -18,6 +18,7 @@ from create_expression import predict_expr
 class Model(QThread):
 
     updated = pyqtSignal()  # in order to work it has to be defined out of the constructor
+    progress_bar = pyqtSignal()
 
     def __init__(self, image, expression, main_window):
         super().__init__()
@@ -147,24 +148,20 @@ class Model(QThread):
                 image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], texture_neutral_model, 512, 512)
                 self.dictionary['image_neutral'] = image
                 return image
-        self.mw.set_progress_bar(0)
         # add expression to neutral face
+        self.progress_bar.emit()
         exprObj = predict_expr()
         vect, nameExpr = predict_expr.create_expr(expression)
         new_expr = _3DMM_obj.deform_3D_shape_fast(np.transpose(pos_est["defShape"]), Components, vect)
 
         shape_expressional_model = np.transpose(new_expr)
-
+        self.progress_bar.emit()
         # create texture for expressional model
-        self.mw.set_progress_bar(35)
         projShape = np.transpose(
             _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), pos_est["S"], pos_est["R"],
                                          pos_est["T"]))
-        self.mw.set_progress_bar(50)
         image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], texture_neutral_model, 512, 512)
-        self.mw.set_progress_bar(95)
-        scipy.misc.imsave('porcodio.jpg', image)
-        self.mw.set_progress_bar(100)
+        self.progress_bar.emit()
         '''
         fExp.create_dataset("expressional_shape", data=shape_expressional_model)
         fExp.close()
@@ -175,9 +172,9 @@ class Model(QThread):
 
 
     def apply_expression_modelPreloaded(self, path_log='log/', expression='angry'):
-        self.mw.set_progress_bar(0)
         if expression == 'neutral':
             return self.dictionary['image_neutral']
+        self.progress_bar.emit()
         # define RP values
         RP_obj = RP()
         # Fitting and pose estimation are within the 3DMM obj
@@ -190,7 +187,7 @@ class Model(QThread):
         print(nameExpr)
         shape_expressional_model = np.transpose(
             _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']), self.dictionary['components'], vect))
-        self.mw.set_progress_bar(50)
+        self.progress_bar.emit()
         # create texture for expressional model
         projShape = np.transpose(
             _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), self.dictionary['pos_est_S'], self.dictionary['pos_est_R'],
@@ -198,7 +195,6 @@ class Model(QThread):
         # texture_expressional_model = (_graph_tools_obj.getRGBtexture(projShape, image))*255
         # [frontalView, colors, mod3d] = _graph_tools_obj.renderFaceLossLess(shape_expressional_model, projShape, image,  dict_['pos_est_S'], dict_['pos_est_R'], dict_['pos_est_T'], 1, dict_['visIdx'])
         image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], self.dictionary['texture_neutral'], 512, 512)
-        self.mw.set_progress_bar(100)
+        self.progress_bar.emit()
 
         return image
-
