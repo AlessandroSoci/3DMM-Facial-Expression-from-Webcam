@@ -19,8 +19,6 @@ import numpy as np
 
 class MainWindow(QMainWindow):
 
-    dictionary_data = {}
-
     def __init__(self):
         super().__init__()
         self.title = "3DMM"
@@ -29,6 +27,7 @@ class MainWindow(QMainWindow):
 
         self.camera = Camera()
         self.progress_bar = QProgressBar(self)
+        self.count = 0
 
         self.toolbar = self.addToolBar('Main Window')
         # self.toolbar_emotions = self.addToolBar('Emotions')
@@ -43,6 +42,8 @@ class MainWindow(QMainWindow):
         self.main_widget = MainWidget(self.video_widget, self.right_label, self.camera)
         self.setCentralWidget(self.main_widget)
 
+        self.model.progress_bar.connect(self.set_progress_bar, type=Qt.QueuedConnection)
+
         self.initUI()
 
     def initUI(self):
@@ -55,8 +56,13 @@ class MainWindow(QMainWindow):
     def get_bool_onclick(self):
         return self.bool_onclick
 
-    def set_progress_bar(self, value):
-        self.progress_bar.setValue(value)
+    def set_progress_bar(self):
+        if self.count <= 2:
+            self.progress_bar.setValue(self.count * 50)
+            self.count = self.count + 1
+            return
+        self.count = 0
+        self.set_progress_bar()
 
     def build_toolbar(self):
 
@@ -71,7 +77,7 @@ class MainWindow(QMainWindow):
         take_photo.setShortcut('Ctrl+Q')
         take_photo.triggered.connect(self.on_click)
         self.toolbar.addAction(take_photo)
-        
+
         # self.progress_bar.setHidden(True)
         self.toolbar.addWidget(self.progress_bar)
 
