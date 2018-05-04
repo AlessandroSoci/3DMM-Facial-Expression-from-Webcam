@@ -114,7 +114,7 @@ class MainWindow(QMainWindow):
         self.picture_taken = True
         self.bool_onclick = True
         self.portrait = self.camera.get_current_frame()
-        self.portrait = resizeImage(self.portrait, 512)
+        self.portrait = resizeImage(self.portrait, 128)
         scipy.misc.imsave('expression_code/imgs/outfile.jpg', self.portrait)
         self.model.set_image('expression_code/imgs/outfile.jpg')
         self.right_label.activate()
