@@ -14,6 +14,10 @@ from Matrix_operations import Matrix_op
 from Matrix_operations import Vector_op
 from create_expression import predict_expr
 
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+from matplotlib import cm
+
 
 class Model(QThread):
 
@@ -59,20 +63,20 @@ class Model(QThread):
         remove_boundary = False
         # lambda_opt = 0.01
         # vars for 3DMM pose and fitting
-        _lambda = 0.01
+        _lambda = 0.007
         rounds = 1
         r = 3
         C_dist = 700
 
         # _path_log = str(path_log) + str('log_file.h5')
-        fExp = h5py.File('log_file.h5', "w")
 
         # get the image
         image = Image.open(original_image_path)
+        #image = Image.open('expression_code/imgs/img_4.jpg')
         # image.convert('RGB')
         # image = image.resize((250,250))
         image = np.asarray(image)
-
+        original_image = image
         detect_landmarks = Detector()
         # landmark of the input image
         landImage = detect_landmarks.eval_landmarks(original_image_path,
@@ -96,7 +100,7 @@ class Model(QThread):
         m_X_obj = Matrix_op(Components, None)
         m_X_obj.reshape(Components)  # define Components_res
         v_weights_obj = Vector_op(Weights)
-        v_weights_obj.scale(1, 0.1)
+        #v_weights_obj.scale(1, 0.1)
 
         # load AVGmodel SHAPE (it contains avgModel, id landmarks 3D, landmarks 3D)
         avgModel_file = h5py.File('expression_code/data/avgModel_bh_1779_NE.mat', 'r')
@@ -126,11 +130,11 @@ class Model(QThread):
         shape_neutral_model = pos_est["defShape"]
 
         # create texture for neutral model
-        projShape = np.transpose(_3DMM_obj.getProjectedVertex(np.transpose(shape_neutral_model), pos_est["S"], pos_est["R"], pos_est["T"]))
-        texture_neutral_model = (_graph_tools_obj.getRGBtexture(projShape, image)) * 255
-        projShape_neutral = projShape
+        projShape_neutral = np.transpose(_3DMM_obj.getProjectedVertex(shape_neutral_model, pos_est["S"], pos_est["R"], pos_est["T"]))
+        texture_neutral_model = (_graph_tools_obj.getRGBtexture(projShape_neutral, image)) * 255
 
         self.dictionary = {
+            'original_image': original_image,
             'shape_neutral': shape_neutral_model,
             'projShape_neutral': projShape_neutral,
             'texture_neutral': texture_neutral_model,
@@ -140,36 +144,35 @@ class Model(QThread):
             'pos_est_T': pos_est["T"],
             'visIdx': pos_est["visIdx"]
         }
-
+        # neutral is the default expression
         if expression == 'neutral':
             if 'image_neutral' in self.dictionary:
                 return self.dictionary['image_neutral']
             else:
-                image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], texture_neutral_model, 512, 512)
+                image = _graph_tools_obj.render3DMM(projShape_neutral[:, 0], projShape_neutral[:, 1], texture_neutral_model, 128, 128)
                 self.dictionary['image_neutral'] = image
                 return image
-        # add expression to neutral face
-        self.progress_bar.emit()
-        exprObj = predict_expr()
-        vect, nameExpr = predict_expr.create_expr(expression)
-        new_expr = _3DMM_obj.deform_3D_shape_fast(np.transpose(pos_est["defShape"]), Components, vect)
+                # add expression to neutral face
+        '''
+        else:
+            print('SECONDO ELSE')
+            h5f = h5py.File('log.h5', 'w')
+            h5f.create_dataset('image', data=np.transpose(original_image))
+            h5f.close()
+            self.progress_bar.emit()
+            exprObj = predict_expr()
+            vect, nameExpr = predict_expr.create_expr(expression)
+            new_expr = _3DMM_obj.deform_3D_shape_fast(np.transpose(pos_est["defShape"]), Components, vect)
 
-        shape_expressional_model = np.transpose(new_expr)
-        self.progress_bar.emit()
-        # create texture for expressional model
-        projShape = np.transpose(
-            _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), pos_est["S"], pos_est["R"],
+            shape_expressional_model = np.transpose(new_expr)
+            self.progress_bar.emit()
+            # create texture for expressional model
+            projShape_expr = np.transpose(
+                _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), pos_est["S"], pos_est["R"],
                                          pos_est["T"]))
-        image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], texture_neutral_model, 512, 512)
-        self.progress_bar.emit()
+            image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], texture_neutral_model, 512, 512)
+            self.progress_bar.emit()
         '''
-        fExp.create_dataset("expressional_shape", data=shape_expressional_model)
-        fExp.close()
-        '''
-        print('SAVED')
-
-        return image
-
 
     def apply_expression_modelPreloaded(self, path_log='log/', expression='angry'):
         if expression == 'neutral':
@@ -184,17 +187,44 @@ class Model(QThread):
         # add expression to neutral face
         exprObj = predict_expr()
         vect, nameExpr = predict_expr.create_expr(expression)
-        print(nameExpr)
+        print(vect.shape)
+        #print(nameExpr)
         shape_expressional_model = np.transpose(
             _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']), self.dictionary['components'], vect))
         self.progress_bar.emit()
         # create texture for expressional model
-        projShape = np.transpose(
-            _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), self.dictionary['pos_est_S'], self.dictionary['pos_est_R'],
+        projShape_expressional_model = np.transpose(
+            _3DMM_obj.getProjectedVertex(shape_expressional_model, self.dictionary['pos_est_S'], self.dictionary['pos_est_R'],
                                          self.dictionary['pos_est_T']))
-        # texture_expressional_model = (_graph_tools_obj.getRGBtexture(projShape, image))*255
+        
+        texture_expressional_model = (_graph_tools_obj.getRGBtexture(projShape_expressional_model, self.dictionary['original_image']))*255
         # [frontalView, colors, mod3d] = _graph_tools_obj.renderFaceLossLess(shape_expressional_model, projShape, image,  dict_['pos_est_S'], dict_['pos_est_R'], dict_['pos_est_T'], 1, dict_['visIdx'])
-        image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], self.dictionary['texture_neutral'], 512, 512)
+        image = _graph_tools_obj.render3DMM(projShape_expressional_model[:, 0], projShape_expressional_model[:, 1], self.dictionary['texture_neutral'], 128, 128)
         self.progress_bar.emit()
 
+        # scale values from in range [0,1]
+        projShape_expressional_model_norm = self.scale(projShape_expressional_model, 1, 0)
+        projShape_neutral_model_norm = self.scale(self.dictionary['projShape_neutral'], 1, 0)
+
+        h5f = h5py.File('log.h5', 'w')
+        h5f.create_dataset('image', data=np.transpose(self.dictionary['original_image']))
+        h5f.create_dataset('projShape_expr', data=np.transpose(projShape_expressional_model))
+        h5f.create_dataset('projShape_expr_norm', data=np.transpose(projShape_expressional_model_norm))
+        h5f.create_dataset('projShape_ne', data=np.transpose(self.dictionary['projShape_neutral']))
+        h5f.create_dataset('projShape_ne_norm', data=np.transpose(projShape_neutral_model_norm))
+        h5f.create_dataset('shape_expr', data=np.transpose(shape_expressional_model))
+        h5f.create_dataset('shape_ne', data=np.transpose(self.dictionary['shape_neutral']))
+        h5f.create_dataset('texture_expr', data=np.transpose(texture_expressional_model))
+        h5f.create_dataset('rendered_image', data=np.transpose(image))
+        h5f.close()
+
+        
+
         return image
+
+
+    def scale(self,V, mx,mn):
+        min_w = np.amin(V)
+        max_w = np.amax(V)
+        V = (((V-min_w)*(mx-mn))/(max_w-min_w)) + mn
+        return V
