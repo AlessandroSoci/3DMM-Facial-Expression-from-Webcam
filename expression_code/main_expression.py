@@ -3,8 +3,12 @@ import time
 import sys
 sys.path.append('expression_code/')
 from PIL import Image
+from PIL import ImageEnhance
 import numpy as np
-import  scipy.misc
+import scipy.misc
+from scipy import misc
+from scipy.misc.pilutil import Image
+import scipy.ndimage as ndimage
 from PyQt5.QtCore import pyqtSignal, QThread
 from landmark_detect import Detector
 from _3DMM import _3DMM
@@ -149,7 +153,31 @@ class Model(QThread):
             if 'image_neutral' in self.dictionary:
                 return self.dictionary['image_neutral']
             else:
-                image = _graph_tools_obj.render3DMM(projShape_neutral[:, 0], projShape_neutral[:, 1], texture_neutral_model, 128, 128)
+                image = _graph_tools_obj.render3DMM(projShape_neutral[:, 0], projShape_neutral[:, 1], texture_neutral_model, 256, 256)
+                image = ndimage.gaussian_filter(image, sigma=(1, 1, 0), order=0)
+                image = Image.fromarray(image)
+
+                # brightness
+                enhancer = ImageEnhance.Brightness(image)
+                image = enhancer.enhance(1.3)
+
+                # color
+                enhancer = ImageEnhance.Color(image)
+                image = enhancer.enhance(0.7)
+
+                # Sharpness
+                #enhancer = ImageEnhance.Sharpness(image)
+                #image = enhancer.enhance(0.0)
+
+                image = np.asarray(image)
+
+        # Sharpness
+        #enhancer = ImageEnhance.Sharpness(image)
+        #image = enhancer.enhance(2)
+
+        # color
+        #enhancer = ImageEnhance.Color(image)
+        #image = enhancer.enhance(0.8)
                 self.dictionary['image_neutral'] = image
                 return image
                 # add expression to neutral face
@@ -199,8 +227,21 @@ class Model(QThread):
         
         texture_expressional_model = (_graph_tools_obj.getRGBtexture(projShape_expressional_model, self.dictionary['original_image']))*255
         # [frontalView, colors, mod3d] = _graph_tools_obj.renderFaceLossLess(shape_expressional_model, projShape, image,  dict_['pos_est_S'], dict_['pos_est_R'], dict_['pos_est_T'], 1, dict_['visIdx'])
-        image = _graph_tools_obj.render3DMM(projShape_expressional_model[:, 0], projShape_expressional_model[:, 1], self.dictionary['texture_neutral'], 128, 128)
+        image = _graph_tools_obj.render3DMM(projShape_expressional_model[:, 0], projShape_expressional_model[:, 1], self.dictionary['texture_neutral'], 256, 256)
         self.progress_bar.emit()
+
+        # post preocessing on the image
+        image = ndimage.gaussian_filter(image, sigma=(0.8, 0.8, 0), order=0)
+        image = Image.fromarray(image)
+
+        # brightness
+        enhancer = ImageEnhance.Brightness(image)
+        image = enhancer.enhance(1.3)
+
+        # color
+        enhancer = ImageEnhance.Color(image)
+        image = enhancer.enhance(0.7)
+        image = np.asarray(image)
 
         # scale values from in range [0,1]
         projShape_expressional_model_norm = self.scale(projShape_expressional_model, 1, 0)
