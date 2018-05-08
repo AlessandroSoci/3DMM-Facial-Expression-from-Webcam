@@ -1,6 +1,8 @@
 from PyQt5.QtGui import QImage, qRgb
 import cv2
 import numpy as np
+from PIL import Image
+import math
 
 
 def toQImage(im):
@@ -34,4 +36,49 @@ def resizeImage(img, value):
     if isinstance(img1, str):
         img = np.require(img, np.uint8, 'C')
         img = toQImage(img)
+    return img
+
+def center_image(img):
+    tmp_img = img[:, :, 0]
+    index = np.nonzero(tmp_img)
+    size = index[0].size - 1
+    first_row = index[0][0]
+    first_column = min(index[1])
+    last_row = index[0][size]
+    last_column = max(index[1])
+    margin_diff_row = tmp_img.shape[0] - last_row
+    margin_diff_col = tmp_img.shape[0] - last_column
+    diff_row = first_row - margin_diff_row
+    diff_col = first_column - margin_diff_col
+
+    if diff_row != 0:
+        if first_row > margin_diff_row:
+            img = np.pad(img, ((0, math.ceil(abs(diff_row)/2)), (0, 0), (0, 0)), 'constant', constant_values=(0, 0))
+            # print('pad', img.shape)
+            vector_to_delete = np.arange(math.ceil(abs(diff_row)/2.0))
+            # print('vector', vector_to_delete)
+            img = np.delete(img, vector_to_delete, 0)
+            # print('delete', img.shape)
+        else:
+            img = np.pad(img, ((math.ceil(abs(diff_row)/2), 0), (0, 0), (0, 0)), 'constant', constant_values=(0, 0))
+            # print('pad', img.shape)
+            vector_to_delete = np.arange(tmp_img.shape[0]-math.ceil(abs(diff_row)/2.0), tmp_img.shape[0])
+            # print('vector', vector_to_delete)
+            img = np.delete(img, vector_to_delete, 0)
+            # print('delete', img.shape)
+    if diff_col != 0:
+        if first_column > margin_diff_col:
+            img = np.pad(img, ((0, 0), (0, math.ceil(abs(diff_col)/2)), (0, 0)), 'constant', constant_values=(0, 0))
+            # print('pad', img.shape)
+            vector_to_delete = np.arange(math.ceil(abs(diff_col)/2.0))
+            # print('vector', vector_to_delete)
+            img = np.delete(img, vector_to_delete, 1)
+            # print('delete', img.shape)
+        else:
+            img = np.pad(img, ((0, 0), ((math.ceil(abs(diff_col)/2)), 0), (0, 0)), 'constant', constant_values=(0, 0))
+            # print('pad', img.shape)
+            vector_to_delete = np.arange(tmp_img.shape[1]-(math.ceil(abs(diff_col)/2.0)), tmp_img.shape[1])
+            # print('vector', vector_to_delete)
+            img = np.delete(img, vector_to_delete, 1)
+            # print('delete', img.shape)
     return img
