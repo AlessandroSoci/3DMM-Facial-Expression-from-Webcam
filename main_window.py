@@ -114,7 +114,12 @@ class MainWindow(QMainWindow):
         self.picture_taken = True
         self.bool_onclick = True
         self.portrait = self.camera.get_current_frame()
-        self.portrait = resizeImage(self.portrait, 256)
+
+        h5f = h5py.File('camera.h5', 'w')
+        h5f.create_dataset('image', data=np.transpose(self.portrait))
+        h5f.close()
+        
+        self.portrait = resizeImage(self.portrait, 128)
         scipy.misc.imsave('expression_code/imgs/outfile.jpg', self.portrait)
         self.model.set_image('expression_code/imgs/outfile.jpg')
         self.right_label.activate()
