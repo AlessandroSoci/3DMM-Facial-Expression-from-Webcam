@@ -13,7 +13,7 @@ from scipy.spatial import ConvexHull
 
 class _3DMM:
     result = {}# dictionary to return
-    def opt_3DMM_fast(self, Weights, Components, Components_res, landmarks3D, id_landmarks_3D, landImage, avgFace, _lambda, rounds, r, C_dist):
+    def opt_3DMM_fast(self, Weights, Components, Components_res, landmarks3D, id_landmarks_3D, landImage, avgFace, _lambda, rounds, r, C_dist, ex_to_me):
         _Weights = Weights
         index = np.array(id_landmarks_3D, dtype=np.intp)
         app_var = np.reshape(avgFace[index,:],(landmarks3D.shape[0],3),order='F')
@@ -22,7 +22,7 @@ class _3DMM:
         _proj = np.transpose(self.getProjectedVertex(app_var, _Sa, _Ra, _Ta))
         # deform shape
         _alpha = self.alphaEstimation(landImage, _proj, Components_res, id_landmarks_3D, _Sa, _Ra, _Ta, Weights, _lambda)
-        _defShape = self.deform_3D_shape_fast(np.transpose(avgFace), Components, _alpha)
+        _defShape = self.deform_3D_shape_fast(np.transpose(avgFace), Components, _alpha, ex_to_me)
         _defShape = np.transpose(_defShape)
         _defLand = np.reshape(_defShape[index,:],(landmarks3D.shape[0],3),order='F')
         _proj = np.transpose(self.getProjectedVertex(_defLand, _Sa, _Ra, _Ta))
@@ -30,7 +30,7 @@ class _3DMM:
             [_Aa, _Sa, _Ra, _Ta] = self.estimate_pose(_defLand, landImage)
             _proj = np.transpose(self.getProjectedVertex(_defLand, _Sa, _Ra, _Ta))
             _alpha = self.alphaEstimation(landImage, _proj, Components_res, id_landmarks_3D, _Sa, _Ra, _Ta, Weights,_lambda)
-            _defShape = self.deform_3D_shape_fast(np.transpose(_defShape),Components,_alpha)
+            _defShape = self.deform_3D_shape_fast(np.transpose(_defShape),Components,_alpha, ex_to_me)
             _defShape = np.transpose(_defShape)
             _defLand = np.reshape(_defShape[index, :], (landmarks3D.shape[0], 3), order='F')
 
@@ -132,29 +132,32 @@ class _3DMM:
         return Alpha
 
 
-    def deform_3D_shape_fast(self, mean_face, eigenvecs, alpha):
+    def deform_3D_shape_fast(self, mean_face, eigenvecs, alpha, ex_to_me):
         dim = (eigenvecs.shape[0])//3
-        alpha_full = np.tile(np.transpose(alpha),(eigenvecs.shape[0],1))
+        alpha_full = np.tile(np.transpose(alpha), (eigenvecs.shape[0],1))
         tmp_eigen = alpha_full*eigenvecs
-        sumVec = np.sum(tmp_eigen,axis=1)# somma attraverso le righe
-        sumMat = np.reshape(np.transpose(sumVec),(3,dim), order='F')
-        return mean_face + sumMat
+        sumVec = np.sum(tmp_eigen, axis=1)  # somma attraverso le righe
+        sumMat = np.reshape(np.transpose(sumVec), (3, dim), order='F')
+        if ex_to_me:
+            return mean_face - sumMat
+        else:
+            return mean_face + sumMat
 
 
-    def estimateVis_vertex(self,vertex,R,C_dist,r):
+    def estimateVis_vertex(self, vertex, R, C_dist, r):
         viewPoint_front = np.array([0,0,C_dist]).reshape(1,3, order='F')
         viewPoint = np.transpose(self.rotatePointCloud(viewPoint_front, R, []))
-        visIdx = self.HPR(vertex,viewPoint,r) # controllare la funzione HPR
+        visIdx = self.HPR(vertex, viewPoint, r)  # controllare la funzione HPR
 
         return visIdx
 
-    def rotatePointCloud(self,P, R, t):
+    def rotatePointCloud(self, P, R, t):
         #if not t:
          #       _tile = np.tile(np.tranpose(t),(t.shape[1],1))
           #      P = P + np.transpose(_tile)
         return np.dot(R, np.transpose(P))
 
-    def HPR(self,p,C,param):
+    def HPR(self, p, C, param):
         dim = p.shape[1]
         numPts = p.shape[0]
         p = p - np.tile(C,(numPts,1))
@@ -179,7 +182,7 @@ class _3DMM:
         return visiblePtInds.reshape(visiblePtInds.shape[0], 1, order='F')
 
     def getVisLand(self, vertex, landImage, visIdx, id_landmarks_3D):
-        # must visLand, idxVland, Nvis
+        # deve ritornare visLand, idxVland, Nvis
         visLand = np.intersect1d(visIdx, id_landmarks_3D)
         # id_Vland
         mb = np.in1d(id_landmarks_3D, visIdx)
