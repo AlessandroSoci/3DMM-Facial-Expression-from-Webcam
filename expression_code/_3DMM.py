@@ -179,7 +179,7 @@ class _3DMM:
         return visiblePtInds.reshape(visiblePtInds.shape[0], 1, order='F')
 
     def getVisLand(self, vertex, landImage, visIdx, id_landmarks_3D):
-        # deve ritornare visLand, idxVland, Nvis
+        # must visLand, idxVland, Nvis
         visLand = np.intersect1d(visIdx, id_landmarks_3D)
         # id_Vland
         mb = np.in1d(id_landmarks_3D, visIdx)

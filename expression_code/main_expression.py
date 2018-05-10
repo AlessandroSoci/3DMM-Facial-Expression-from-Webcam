@@ -17,6 +17,7 @@ from util_for_graphic import graphic_tools
 from Matrix_operations import Matrix_op
 from Matrix_operations import Vector_op
 from create_expression import predict_expr
+from some_functions import center_image
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -109,6 +110,7 @@ class Model(QThread):
         # load AVGmodel SHAPE (it contains avgModel, id landmarks 3D, landmarks 3D)
         avgModel_file = h5py.File('expression_code/data/avgModel_bh_1779_NE.mat', 'r')
         avg_model_data = np.transpose(np.array(avgModel_file["avgModel"]))
+        self.id_landmarks_3D = np.transpose(np.array(avgModel_file["idxLandmarks3D"]))
         id_landmarks_3D = np.transpose(np.array(avgModel_file["idxLandmarks3D"]))
         landmarks_3D = np.transpose(np.array(avgModel_file["landmarks3D"]))
 
@@ -151,10 +153,11 @@ class Model(QThread):
         # neutral is the default expression
         if expression == 'neutral':
             if 'image_neutral' in self.dictionary:
-                return self.dictionary['image_neutral']
+
+                return center_image(self.dictionary['image_neutral'])
             else:
-                image = _graph_tools_obj.render3DMM(projShape_neutral[:, 0], projShape_neutral[:, 1], texture_neutral_model, 256, 256)
-                image = ndimage.gaussian_filter(image, sigma=(1, 1, 0), order=0)
+                image = _graph_tools_obj.render3DMM(projShape_neutral[:, 0], projShape_neutral[:, 1], texture_neutral_model, 128, 128)
+                image = ndimage.gaussian_filter(image, sigma=(0.8, 0.8, 0), order=0)
                 image = Image.fromarray(image)
 
                 # brightness
@@ -165,42 +168,10 @@ class Model(QThread):
                 enhancer = ImageEnhance.Color(image)
                 image = enhancer.enhance(0.7)
 
-                # Sharpness
-                #enhancer = ImageEnhance.Sharpness(image)
-                #image = enhancer.enhance(0.0)
-
                 image = np.asarray(image)
 
-        # Sharpness
-        #enhancer = ImageEnhance.Sharpness(image)
-        #image = enhancer.enhance(2)
-
-        # color
-        #enhancer = ImageEnhance.Color(image)
-        #image = enhancer.enhance(0.8)
                 self.dictionary['image_neutral'] = image
-                return image
-                # add expression to neutral face
-        '''
-        else:
-            print('SECONDO ELSE')
-            h5f = h5py.File('log.h5', 'w')
-            h5f.create_dataset('image', data=np.transpose(original_image))
-            h5f.close()
-            self.progress_bar.emit()
-            exprObj = predict_expr()
-            vect, nameExpr = predict_expr.create_expr(expression)
-            new_expr = _3DMM_obj.deform_3D_shape_fast(np.transpose(pos_est["defShape"]), Components, vect)
-
-            shape_expressional_model = np.transpose(new_expr)
-            self.progress_bar.emit()
-            # create texture for expressional model
-            projShape_expr = np.transpose(
-                _3DMM_obj.getProjectedVertex(np.transpose(shape_expressional_model), pos_est["S"], pos_est["R"],
-                                         pos_est["T"]))
-            image = _graph_tools_obj.render3DMM(projShape[:, 0], projShape[:, 1], texture_neutral_model, 512, 512)
-            self.progress_bar.emit()
-        '''
+                return center_image(image)
 
     def apply_expression_modelPreloaded(self, path_log='log/', expression='angry'):
         if expression == 'neutral':
@@ -215,7 +186,6 @@ class Model(QThread):
         # add expression to neutral face
         exprObj = predict_expr()
         vect, nameExpr = predict_expr.create_expr(expression)
-        print(vect.shape)
         #print(nameExpr)
         shape_expressional_model = np.transpose(
             _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']), self.dictionary['components'], vect))
@@ -227,7 +197,7 @@ class Model(QThread):
         
         texture_expressional_model = (_graph_tools_obj.getRGBtexture(projShape_expressional_model, self.dictionary['original_image']))*255
         # [frontalView, colors, mod3d] = _graph_tools_obj.renderFaceLossLess(shape_expressional_model, projShape, image,  dict_['pos_est_S'], dict_['pos_est_R'], dict_['pos_est_T'], 1, dict_['visIdx'])
-        image = _graph_tools_obj.render3DMM(projShape_expressional_model[:, 0], projShape_expressional_model[:, 1], self.dictionary['texture_neutral'], 256, 256)
+        image = _graph_tools_obj.render3DMM(projShape_expressional_model[:, 0], projShape_expressional_model[:, 1], self.dictionary['texture_neutral'], 128, 128)
         self.progress_bar.emit()
 
         # post preocessing on the image
@@ -246,9 +216,15 @@ class Model(QThread):
         # scale values from in range [0,1]
         projShape_expressional_model_norm = self.scale(projShape_expressional_model, 1, 0)
         projShape_neutral_model_norm = self.scale(self.dictionary['projShape_neutral'], 1, 0)
+        '''
+        # invert columns of projShape (need to map the texture of the original image)
+        projShape_expressional_model_norm[:,[0,1]] = projShape_expressional_model_norm[:,[1,0]]
+        projShape_neutral_model_norm[:,[0,1]] = projShape_neutral_model_norm[:,[1,0]]
+        '''
 
         h5f = h5py.File('log.h5', 'w')
-        h5f.create_dataset('image', data=np.transpose(self.dictionary['original_image']))
+        h5f.create_dataset('image', data=np.transpose(self.dictionary['original_image']))   
+        h5f.create_dataset('id_landmarks_3D', data=np.transpose(self.id_landmarks_3D))
         h5f.create_dataset('projShape_expr', data=np.transpose(projShape_expressional_model))
         h5f.create_dataset('projShape_expr_norm', data=np.transpose(projShape_expressional_model_norm))
         h5f.create_dataset('projShape_ne', data=np.transpose(self.dictionary['projShape_neutral']))
@@ -257,12 +233,13 @@ class Model(QThread):
         h5f.create_dataset('shape_ne', data=np.transpose(self.dictionary['shape_neutral']))
         h5f.create_dataset('texture_expr', data=np.transpose(texture_expressional_model))
         h5f.create_dataset('rendered_image', data=np.transpose(image))
+
+
+
+        print("DATA SAVED")
         h5f.close()
 
-        
-
-        return image
-
+        return center_image(image)
 
     def scale(self,V, mx,mn):
         min_w = np.amin(V)
