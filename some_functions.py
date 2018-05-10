@@ -1,7 +1,6 @@
 from PyQt5.QtGui import QImage, qRgb
 import cv2
 import numpy as np
-from PIL import Image
 import math
 
 
@@ -54,31 +53,20 @@ def center_image(img):
     if diff_row != 0:
         if first_row > margin_diff_row:
             img = np.pad(img, ((0, math.ceil(abs(diff_row)/2)), (0, 0), (0, 0)), 'constant', constant_values=(0, 0))
-            # print('pad', img.shape)
             vector_to_delete = np.arange(math.ceil(abs(diff_row)/2.0))
-            # print('vector', vector_to_delete)
             img = np.delete(img, vector_to_delete, 0)
-            # print('delete', img.shape)
+
         else:
             img = np.pad(img, ((math.ceil(abs(diff_row)/2), 0), (0, 0), (0, 0)), 'constant', constant_values=(0, 0))
-            # print('pad', img.shape)
             vector_to_delete = np.arange(tmp_img.shape[0]-math.ceil(abs(diff_row)/2.0), tmp_img.shape[0])
-            # print('vector', vector_to_delete)
             img = np.delete(img, vector_to_delete, 0)
-            # print('delete', img.shape)
     if diff_col != 0:
         if first_column > margin_diff_col:
             img = np.pad(img, ((0, 0), (0, math.ceil(abs(diff_col)/2)), (0, 0)), 'constant', constant_values=(0, 0))
-            # print('pad', img.shape)
             vector_to_delete = np.arange(math.ceil(abs(diff_col)/2.0))
-            # print('vector', vector_to_delete)
             img = np.delete(img, vector_to_delete, 1)
-            # print('delete', img.shape)
         else:
             img = np.pad(img, ((0, 0), ((math.ceil(abs(diff_col)/2)), 0), (0, 0)), 'constant', constant_values=(0, 0))
-            # print('pad', img.shape)
             vector_to_delete = np.arange(tmp_img.shape[1]-(math.ceil(abs(diff_col)/2.0)), tmp_img.shape[1])
-            # print('vector', vector_to_delete)
             img = np.delete(img, vector_to_delete, 1)
-            # print('delete', img.shape)
     return img
