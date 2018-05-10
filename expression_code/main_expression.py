@@ -1,6 +1,7 @@
 import h5py
 import time
 import sys
+from some_functions import center_image
 sys.path.append('expression_code/')
 from PIL import Image
 from PIL import ImageEnhance
@@ -17,7 +18,6 @@ from util_for_graphic import graphic_tools
 from Matrix_operations import Matrix_op
 from Matrix_operations import Vector_op
 from create_expression import predict_expr
-from some_functions import center_image
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -29,8 +29,9 @@ class Model(QThread):
     updated = pyqtSignal()  # in order to work it has to be defined out of the constructor
     progress_bar = pyqtSignal()
 
-    def __init__(self, image, expression, main_window):
+    def __init__(self, image, expression, main_window, expression_to_neutral):
         super().__init__()
+        self.ex_to_me = expression_to_neutral
         self.image_path = image
         self.image = None
         self.expression = expression
@@ -132,7 +133,7 @@ class Model(QThread):
 
         pos_est = _3DMM_obj.opt_3DMM_fast(v_weights_obj.V, m_X_obj.X_after_training, m_X_obj.X_res,
                                           landmarks_3D, id_landmarks_3D, landImage, avg_model_data, _lambda, rounds, r,
-                                          C_dist)
+                                          C_dist, self.ex_to_me)
         shape_neutral_model = pos_est["defShape"]
 
         # create texture for neutral model
@@ -152,12 +153,42 @@ class Model(QThread):
         }
         # neutral is the default expression
         if expression == 'neutral':
-            if 'image_neutral' in self.dictionary:
+            # if 'image_neutral' in self.dictionary:
+              #   return self.dictionary['image_neutral']
+            # else:
+            image = _graph_tools_obj.render3DMM(projShape_neutral[:, 0], projShape_neutral[:, 1], texture_neutral_model, 256, 256)
+            image = ndimage.gaussian_filter(image, sigma=(1, 1, 0), order=0)
+            image = Image.fromarray(image)
 
-                return center_image(self.dictionary['image_neutral'])
+            # brightness
+            enhancer = ImageEnhance.Brightness(image)
+            image = enhancer.enhance(1.3)
+
+            # color
+            enhancer = ImageEnhance.Color(image)
+            image = enhancer.enhance(0.7)
+
+            image = center_image(np.asarray(image))
+            self.dictionary['image_neutral'] = image
+            return image
+        else:
+            return self.apply_expression_modelPreloaded(expression=expression)
+
+    def apply_expression_modelPreloaded(self, path_log='log/', expression='angry'):
+        if expression == 'neutral':
+            if 'image_neutral' in self.dictionary:
+                return self.dictionary['image_neutral']
             else:
-                image = _graph_tools_obj.render3DMM(projShape_neutral[:, 0], projShape_neutral[:, 1], texture_neutral_model, 128, 128)
-                image = ndimage.gaussian_filter(image, sigma=(0.8, 0.8, 0), order=0)
+                _3DMM_obj = _3DMM()
+                _graph_tools_obj = graphic_tools(_3DMM_obj)
+
+                texture_neutral_model = (_graph_tools_obj.getRGBtexture(self.dictionary['projShape_neutral'],
+                                                                        self.dictionary['original_image'])) * 255
+
+                image = _graph_tools_obj.render3DMM(self.dictionary['projShape_neutral'][:, 0],
+                                                    self.dictionary['projShape_neutral'][:, 1],
+                                                    texture_neutral_model, 256, 256)
+                image = ndimage.gaussian_filter(image, sigma=(1, 1, 0), order=0)
                 image = Image.fromarray(image)
 
                 # brightness
@@ -169,13 +200,10 @@ class Model(QThread):
                 image = enhancer.enhance(0.7)
 
                 image = np.asarray(image)
-
                 self.dictionary['image_neutral'] = image
-                return center_image(image)
+                # center image
 
-    def apply_expression_modelPreloaded(self, path_log='log/', expression='angry'):
-        if expression == 'neutral':
-            return self.dictionary['image_neutral']
+                return image
         self.progress_bar.emit()
         # define RP values
         RP_obj = RP()
@@ -186,9 +214,10 @@ class Model(QThread):
         # add expression to neutral face
         exprObj = predict_expr()
         vect, nameExpr = predict_expr.create_expr(expression)
+        print(vect.shape)
         #print(nameExpr)
         shape_expressional_model = np.transpose(
-            _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']), self.dictionary['components'], vect))
+            _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']), self.dictionary['components'], vect, self.ex_to_me))
         self.progress_bar.emit()
         # create texture for expressional model
         projShape_expressional_model = np.transpose(
@@ -197,7 +226,7 @@ class Model(QThread):
         
         texture_expressional_model = (_graph_tools_obj.getRGBtexture(projShape_expressional_model, self.dictionary['original_image']))*255
         # [frontalView, colors, mod3d] = _graph_tools_obj.renderFaceLossLess(shape_expressional_model, projShape, image,  dict_['pos_est_S'], dict_['pos_est_R'], dict_['pos_est_T'], 1, dict_['visIdx'])
-        image = _graph_tools_obj.render3DMM(projShape_expressional_model[:, 0], projShape_expressional_model[:, 1], self.dictionary['texture_neutral'], 128, 128)
+        image = _graph_tools_obj.render3DMM(projShape_expressional_model[:, 0], projShape_expressional_model[:, 1], self.dictionary['texture_neutral'], 256, 256)
         self.progress_bar.emit()
 
         # post preocessing on the image
@@ -216,14 +245,9 @@ class Model(QThread):
         # scale values from in range [0,1]
         projShape_expressional_model_norm = self.scale(projShape_expressional_model, 1, 0)
         projShape_neutral_model_norm = self.scale(self.dictionary['projShape_neutral'], 1, 0)
-        '''
-        # invert columns of projShape (need to map the texture of the original image)
-        projShape_expressional_model_norm[:,[0,1]] = projShape_expressional_model_norm[:,[1,0]]
-        projShape_neutral_model_norm[:,[0,1]] = projShape_neutral_model_norm[:,[1,0]]
-        '''
 
         h5f = h5py.File('log.h5', 'w')
-        h5f.create_dataset('image', data=np.transpose(self.dictionary['original_image']))   
+        h5f.create_dataset('image', data=np.transpose(self.dictionary['original_image']))
         h5f.create_dataset('id_landmarks_3D', data=np.transpose(self.id_landmarks_3D))
         h5f.create_dataset('projShape_expr', data=np.transpose(projShape_expressional_model))
         h5f.create_dataset('projShape_expr_norm', data=np.transpose(projShape_expressional_model_norm))
@@ -233,13 +257,13 @@ class Model(QThread):
         h5f.create_dataset('shape_ne', data=np.transpose(self.dictionary['shape_neutral']))
         h5f.create_dataset('texture_expr', data=np.transpose(texture_expressional_model))
         h5f.create_dataset('rendered_image', data=np.transpose(image))
-
-
+        h5f.close()
 
         print("DATA SAVED")
         h5f.close()
 
         return center_image(image)
+
 
     def scale(self,V, mx,mn):
         min_w = np.amin(V)
