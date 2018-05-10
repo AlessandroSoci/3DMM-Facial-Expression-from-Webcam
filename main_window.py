@@ -19,9 +19,14 @@ import numpy as np
 
 class MainWindow(QMainWindow):
 
-    def __init__(self):
+    def __init__(self, expression_to_neutral=False):
         super().__init__()
-        self.title = "3DMM"
+
+        self.expression_to_neutral = expression_to_neutral
+        if self.expression_to_neutral:
+            self.title = "From Expression to Neutral"
+        else:
+            self.title = "3DMM"
         self.setWindowIcon(QtGui.QIcon('images/1UP.ico'))
         self.setFixedSize(1200, 700)
 
@@ -36,13 +41,14 @@ class MainWindow(QMainWindow):
         self.picture_taken = False
         self.bool_onclick = None
         self.portrait = None
-        self.model = Model(None, self.expression, self)
+        self.model = Model(None, self.expression, self, self.expression_to_neutral)
         self.video_widget = VideoWidget(self.camera)
         self.right_label = RightLabel(self, self.model)
         self.main_widget = MainWidget(self.video_widget, self.right_label, self.camera)
         self.setCentralWidget(self.main_widget)
 
         self.model.progress_bar.connect(self.set_progress_bar, type=Qt.QueuedConnection)
+        self.combo_box = QComboBox(self)
 
         self.initUI()
 
@@ -55,6 +61,9 @@ class MainWindow(QMainWindow):
 
     def get_bool_onclick(self):
         return self.bool_onclick
+
+    def get_combo_box(self):
+        return self.combo_box
 
     def set_progress_bar(self):
         if self.count <= 2:
@@ -69,7 +78,7 @@ class MainWindow(QMainWindow):
         slide_bar = QSlider(Qt.Horizontal)
         slide_bar.setMinimum(0)
         slide_bar.setMaximum(8)
-        slide_bar.setValue(0)
+        slide_bar.setValue(3)
         slide_bar.valueChanged.connect(self.camera.setZoom)
         self.toolbar.addWidget(slide_bar)
 
@@ -84,17 +93,19 @@ class MainWindow(QMainWindow):
         self.toolbar.addSeparator()
 
         # build slide fo upload pre-built patterns.looking for the pattern class
-        combo_box = QComboBox(self)
-        combo_box.addItem("Neutral")
-        combo_box.addItem("Surprise")
-        combo_box.addItem("Happy")
-        combo_box.addItem("Contempt")
-        combo_box.addItem("Sadness")
-        combo_box.addItem("Disgust")
-        combo_box.addItem("Angry")
-        combo_box.addItem("Fear")
-        self.toolbar.addWidget(combo_box)
-        combo_box.activated[str].connect(self.combo_changed)
+        if self.expression_to_neutral:
+            self.combo_box.addItem("Face")
+        else:
+            self.combo_box.addItem("Neutral")
+        self.combo_box.addItem("Surprise")
+        self.combo_box.addItem("Happy")
+        self.combo_box.addItem("Contempt")
+        self.combo_box.addItem("Sadness")
+        self.combo_box.addItem("Disgust")
+        self.combo_box.addItem("Angry")
+        self.combo_box.addItem("Fear")
+        self.toolbar.addWidget(self.combo_box)
+        self.combo_box.activated[str].connect(self.combo_changed)
         self.toolbar.addSeparator()
 
     def activate(self):
@@ -114,12 +125,7 @@ class MainWindow(QMainWindow):
         self.picture_taken = True
         self.bool_onclick = True
         self.portrait = self.camera.get_current_frame()
-
-        h5f = h5py.File('camera.h5', 'w')
-        h5f.create_dataset('image', data=np.transpose(self.portrait))
-        h5f.close()
-        
-        self.portrait = resizeImage(self.portrait, 128)
+        self.portrait = resizeImage(self.portrait, 256)
         scipy.misc.imsave('expression_code/imgs/outfile.jpg', self.portrait)
         self.model.set_image('expression_code/imgs/outfile.jpg')
         self.right_label.activate()
