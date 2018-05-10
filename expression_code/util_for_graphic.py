@@ -295,14 +295,17 @@ class graphic_tools:
             cumulative_matrix_col = cumulative_matrix_col + object[i].colors
         return cumulative_matrix_col/len(object)
 
-    def deform_texture_fast(self, mean, eigenves, alpha):
+    def deform_texture_fast(self, mean, eigenves, alpha, ex_to_ne):
         dim = eigenves.shape[0]/3
         alpha_full = np.tile(np.transpose(alpha), (eigenves.shape[0],1))
         tmp_eigen = alpha_full*eigenves
         sumVec = tmp_eigen.sum(axis=1)
         sumVec = sumVec.reshape((sumVec.shape[0],1), order='F')
         sumMat = np.reshape(np.transpose(sumVec), (3,dim), order='F')
-        return mean + sumMat
+        if ex_to_ne:
+            return mean - sumMat
+        else:
+            return mean + sumMat
 
     def cov(self,X):
         """
@@ -365,5 +368,3 @@ class graphic_tools:
         for i in range(len(obj)):
             sum += obj[i].ssim_D
         return sum/len(obj)
-
-
