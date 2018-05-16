@@ -27,7 +27,7 @@ class MainWidget(QWidget):
         self.initUI()
 
     def initUI(self):
-        image_r = resizeImage("images/desktop.jpg", 600)
+        image_r = resizeImage("images/anonymous-person.jpg", 600)
         image_r = QPixmap.fromImage(image_r)
         self.right_label.setPixmap(image_r)
 
