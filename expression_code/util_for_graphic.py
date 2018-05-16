@@ -5,6 +5,7 @@ from scipy import interpolate
 import itertools
 from scipy.interpolate import LinearNDInterpolator
 from scipy.interpolate import griddata
+from scipy.interpolate import BarycentricInterpolator
 from scipy import interpolate
 from numpy import array, dot, mean, std, empty, argsort
 from numpy.linalg import eigh, solve
@@ -14,7 +15,12 @@ from PIL import Image
 import cv2
 from scipy.spatial import ConvexHull
 from matplotlib import path
-#from itertools import izip
+
+from matplotlib.colors import Normalize
+from matplotlib import cm
+
+import matplotlib.pyplot as plt
+
 
 
 class graphic_tools:
@@ -368,3 +374,113 @@ class graphic_tools:
         for i in range(len(obj)):
             sum += obj[i].ssim_D
         return sum/len(obj)
+
+    def plot_mesh(self, vertex, face, texture, texture_coords):
+        # function to map texture (on a 2d image) to a 3d surface
+        # It's not general, vertex was assigned both to FF and TF
+        FF = face
+        VV = vertex 
+        TF = face
+        VT = texture_coords 
+        I = texture
+        iscolor = True
+        VT2 = VT
+        sizep = 64
+        [lambda1, lambda2, lambda3, jind] = self.calculateBarycentricInterpolationValues(sizep)
+        Ir = I[:,:,0]
+        Ig = I[:,:,1]
+        Ib = I[:,:,2]
+        Jr = np.zeros((sizep+1, sizep+1))
+        Jg = np.zeros((sizep+1, sizep+1))
+        Jb = np.zeros((sizep+1, sizep+1))
+
+        #for i in range(FF.shape[0]):
+        for i in range(1):
+            # current triangles of the mesh
+            V = VV[FF[i,:],:]
+            Vt = VT2[TF[i,:],:]
+
+            # Define the triangle as a surface
+            x = np.matrix([[V[0,0], V[1,0]], [V[2,0], V[2,0]]])
+            y = np.matrix([[V[0,1], V[1,1]], [V[2,1], V[2,1]]])
+            z = np.matrix([[V[0,2], V[1,2]], [V[2,2], V[2,2]]])
+
+            # Define the texture coordinates of the surface
+            tx = np.matrix([Vt[0,0], Vt[1,0], Vt[2,0], Vt[2,0]])
+            ty = np.matrix([Vt[0,1], Vt[1,1], Vt[2,1], Vt[2,1]])
+            xy = np.matrix([ [[tx[0,0]], ty[0,0]], [tx[0,1], ty[0,1]], [tx[0,2], ty[0,2]], [tx[0,2], ty[0,2]] ])
+            pos = np.zeros([lambda1.shape[0], 2])
+            pos[:,0] = (xy[0,0]*lambda1+xy[1,0]*lambda2+xy[2,0]*lambda3).reshape((pos.shape[0]))
+            pos[:,1] = (xy[0,1]*lambda1+xy[1,1]*lambda2+xy[2,1]*lambda3).reshape((pos.shape[0]))
+            pos = np.round(pos)
+            pos[:,0] = np.minimum(pos[:,0], I.shape[0])
+            pos[:,1] = np.minimum(pos[:,1], I.shape[1])
+            posind=(pos[:,0]-1)+(pos[:,1]-1)*I.shape[0]+1
+            # indices
+            jind = np.array(jind, dtype=np.intp)
+            posind = np.array(posind, dtype=np.intp)
+            Jr = Jr.flatten(order='F')
+            Jg = Jr.flatten(order='F')
+            Jb = Jr.flatten(order='F')
+            Ir = Ir.flatten(order='F')
+            Ig = Ir.flatten(order='F')
+            Ib = Ir.flatten(order='F')
+
+            J = np.zeros((sizep+1, sizep+1, 3)) 
+            
+            Jr[jind-1] = Ir[posind-1]
+            J[:,:,0] = Jr.reshape((J.shape[0], J.shape[0]))
+
+            Jg[jind-1] = Ig[posind-1]
+            J[:,:,1] = Jg.reshape((J.shape[0], J.shape[0]))
+
+            Jb[jind-1] = Ib[posind-1]
+            J[:,:,2] = Jb.reshape((J.shape[0], J.shape[0]))
+
+            
+            
+            
+        return J
+
+
+    def calculateBarycentricInterpolationValues(self, sizep):
+        # Define a triangle in the upperpart of an square, because only that
+        # part is used by the surface function
+        x1 = sizep
+        y1 = sizep
+        x2 = sizep
+        y2 = 0
+        x3 = 0
+        y3 = 0
+        detT = (x1-x3)*(y2-y3) - (x2-x3)*(y1-y3)
+        [x,y] = np.meshgrid(np.arange(0,sizep+1), np.arange(0,sizep+1))
+        x = x.flatten()
+        y = y.flatten()
+        x = x.reshape((x.shape[0], 1))
+        y = y.reshape((y.shape[0], 1))
+        lambda1 = ((y2-y3)*(x-x3)+(x3-x2)*(y-y3))/detT
+        lambda2 = ((y3-y1)*(x-x3)+(x1-x3)*(y-y3))/detT
+        lambda3 = 1-lambda1-lambda2
+
+        [jx,jy] = np.meshgrid(sizep-np.arange(0,sizep+1)+1, sizep-np.arange(0,sizep+1)+1)
+        jind = (jx.flatten()-1)+(jy.flatten()-1)*(sizep+1)+1
+        return np.reshape(lambda1, (lambda1.shape[0], 1)), np.reshape(lambda2, (lambda2.shape[0], 1)), np.reshape(lambda3, (lambda3.shape[0], 1)), jind
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

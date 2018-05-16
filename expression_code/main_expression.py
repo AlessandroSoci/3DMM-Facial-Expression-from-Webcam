@@ -8,6 +8,7 @@ from PIL import ImageEnhance
 import numpy as np
 import scipy.misc
 from scipy import misc
+from scipy.spatial import Delaunay
 from scipy.misc.pilutil import Image
 import scipy.ndimage as ndimage
 from PyQt5.QtCore import pyqtSignal, QThread
@@ -69,7 +70,7 @@ class Model(QThread):
         remove_boundary = False
         # lambda_opt = 0.01
         # vars for 3DMM pose and fitting
-        _lambda = 0.007
+        _lambda = 0.01
         rounds = 1
         r = 3
         C_dist = 700
@@ -140,6 +141,12 @@ class Model(QThread):
         projShape_neutral = np.transpose(_3DMM_obj.getProjectedVertex(shape_neutral_model, pos_est["S"], pos_est["R"], pos_est["T"]))
         texture_neutral_model = (_graph_tools_obj.getRGBtexture(projShape_neutral, image)) * 255
 
+
+        # create texture 
+        #tri = Delaunay(points)
+        projShape_neutral[:,[0,1]] = projShape_neutral[:,[1,0]]
+        _graph_tools_obj.plot_mesh(tri, shape_expr, tri, image, projShape_neutral)
+
         self.dictionary = {
             'original_image': original_image,
             'shape_neutral': shape_neutral_model,
@@ -156,19 +163,10 @@ class Model(QThread):
             # if 'image_neutral' in self.dictionary:
               #   return self.dictionary['image_neutral']
             # else:
-            image = _graph_tools_obj.render3DMM(projShape_neutral[:, 0], projShape_neutral[:, 1], texture_neutral_model, 256, 256)
-            image = ndimage.gaussian_filter(image, sigma=(1, 1, 0), order=0)
+            image = _graph_tools_obj.render3DMM(projShape_neutral[:, 0], projShape_neutral[:, 1], texture_neutral_model, 600, 600)
+            #image = ndimage.gaussian_filter(image, sigma=(1, 1, 0), order=0)
             image = Image.fromarray(image)
-
-            # brightness
-            enhancer = ImageEnhance.Brightness(image)
-            image = enhancer.enhance(1.3)
-
-            # color
-            enhancer = ImageEnhance.Color(image)
-            image = enhancer.enhance(0.7)
-
-            image = center_image(np.asarray(image))
+            image = center_image(self.post_processing(image))
             self.dictionary['image_neutral'] = image
             return image
         else:
@@ -187,23 +185,12 @@ class Model(QThread):
 
                 image = _graph_tools_obj.render3DMM(self.dictionary['projShape_neutral'][:, 0],
                                                     self.dictionary['projShape_neutral'][:, 1],
-                                                    texture_neutral_model, 256, 256)
-                image = ndimage.gaussian_filter(image, sigma=(1, 1, 0), order=0)
-                image = Image.fromarray(image)
+                                                    texture_neutral_model, 600, 600)
 
-                # brightness
-                enhancer = ImageEnhance.Brightness(image)
-                image = enhancer.enhance(1.3)
-
-                # color
-                enhancer = ImageEnhance.Color(image)
-                image = enhancer.enhance(0.7)
-
-                image = np.asarray(image)
-                self.dictionary['image_neutral'] = image
+                self.dictionary['image_neutral'] = center_image(post_processing(image))
                 # center image
-
-                return image
+                #image = self.overlay_imgs(image, self.dictionary['original_image'])
+                return self.post_processing(centerimage(image))
         self.progress_bar.emit()
         # define RP values
         RP_obj = RP()
@@ -214,7 +201,7 @@ class Model(QThread):
         # add expression to neutral face
         exprObj = predict_expr()
         vect, nameExpr = predict_expr.create_expr(expression)
-        print(vect.shape)
+        #print(vect.shape)
         #print(nameExpr)
         shape_expressional_model = np.transpose(
             _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']), self.dictionary['components'], vect, self.ex_to_me))
@@ -226,43 +213,18 @@ class Model(QThread):
         
         texture_expressional_model = (_graph_tools_obj.getRGBtexture(projShape_expressional_model, self.dictionary['original_image']))*255
         # [frontalView, colors, mod3d] = _graph_tools_obj.renderFaceLossLess(shape_expressional_model, projShape, image,  dict_['pos_est_S'], dict_['pos_est_R'], dict_['pos_est_T'], 1, dict_['visIdx'])
-        image = _graph_tools_obj.render3DMM(projShape_expressional_model[:, 0], projShape_expressional_model[:, 1], self.dictionary['texture_neutral'], 256, 256)
+        image = _graph_tools_obj.render3DMM(projShape_expressional_model[:, 0], projShape_expressional_model[:, 1], self.dictionary['texture_neutral'], 600, 600)
         self.progress_bar.emit()
 
-        # post preocessing on the image
-        image = ndimage.gaussian_filter(image, sigma=(0.8, 0.8, 0), order=0)
-        image = Image.fromarray(image)
-
-        # brightness
-        enhancer = ImageEnhance.Brightness(image)
-        image = enhancer.enhance(1.3)
-
-        # color
-        enhancer = ImageEnhance.Color(image)
-        image = enhancer.enhance(0.7)
-        image = np.asarray(image)
-
         # scale values from in range [0,1]
-        projShape_expressional_model_norm = self.scale(projShape_expressional_model, 1, 0)
-        projShape_neutral_model_norm = self.scale(self.dictionary['projShape_neutral'], 1, 0)
+        #projShape_expressional_model_norm = self.scale(projShape_expressional_model, 1, 0)
+        #projShape_neutral_model_norm = self.scale(self.dictionary['projShape_neutral'], 1, 0)
 
-        h5f = h5py.File('log.h5', 'w')
-        h5f.create_dataset('image', data=np.transpose(self.dictionary['original_image']))
-        h5f.create_dataset('id_landmarks_3D', data=np.transpose(self.id_landmarks_3D))
-        h5f.create_dataset('projShape_expr', data=np.transpose(projShape_expressional_model))
-        h5f.create_dataset('projShape_expr_norm', data=np.transpose(projShape_expressional_model_norm))
-        h5f.create_dataset('projShape_ne', data=np.transpose(self.dictionary['projShape_neutral']))
-        h5f.create_dataset('projShape_ne_norm', data=np.transpose(projShape_neutral_model_norm))
-        h5f.create_dataset('shape_expr', data=np.transpose(shape_expressional_model))
-        h5f.create_dataset('shape_ne', data=np.transpose(self.dictionary['shape_neutral']))
-        h5f.create_dataset('texture_expr', data=np.transpose(texture_expressional_model))
-        h5f.create_dataset('rendered_image', data=np.transpose(image))
-        h5f.close()
-
-        print("DATA SAVED")
-        h5f.close()
-
-        return center_image(image)
+        #h5f = h5py.File('log.h5', 'w')
+        #h5f.create_dataset('image', data=np.transpose(self.dictionary['original_image']))
+        #h5f.close()
+        #image = self.overlay_imgs(image, self.dictionary['original_image'])
+        return self.post_processing(center_image(image))
 
 
     def scale(self,V, mx,mn):
@@ -270,3 +232,35 @@ class Model(QThread):
         max_w = np.amax(V)
         V = (((V-min_w)*(mx-mn))/(max_w-min_w)) + mn
         return V
+
+    def post_processing(self, image):
+        brightness_val = 1.3
+        color_val = 1.3
+        gaussian_val = 0.8
+
+        image = ndimage.gaussian_filter(image, sigma=(0.5, 0.5, 0), order=0)
+        image = Image.fromarray(image)
+
+        # brightness
+        enhancer = ImageEnhance.Brightness(image)
+        image = enhancer.enhance(brightness_val)
+
+        # color
+        enhancer = ImageEnhance.Color(image)
+        image = enhancer.enhance(color_val)
+        image = np.asarray(image)
+
+        return image
+
+    def overlay_imgs(self, img1, img2):
+        # input must be numpy array
+        image1 = Image.fromarray(img1)
+        image2 = Image.fromarray(img2)
+        return np.array(Image.blend(image1, image2, alpha=0.5))
+
+
+
+
+
+
+
