@@ -1,8 +1,10 @@
-# 3DMM-Facial-Expression-from-Webcam
-App to modify the 3D expression
+# 3DMM Facial Expression from Webcam
+Application to modify the 3D faces
 
 ## Run
 - download the [repository](https://github.com/AlessandroSoci/3DMM-Facial-Expression-from-Webcam.git) (clone or zip download)
+- download extra-files from [drive]()
+- unzip extra-dile and add it on expression_code/data path
 - run `main.py` or `expression_to_neutral.py`
 
 The scripts will output the same window but with different application dependently if you run `main.py` or `expression_to_neutral.py`.
