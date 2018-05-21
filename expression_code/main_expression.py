@@ -144,8 +144,8 @@ class Model(QThread):
 
         # create texture 
         #tri = Delaunay(points)
-        projShape_neutral[:,[0,1]] = projShape_neutral[:,[1,0]]
-        # _graph_tools_obj.plot_mesh(tri, shape_expr, tri, image, projShape_neutral)
+        #projShape_neutral[:,[0,1]] = projShape_neutral[:,[1,0]]
+        #_graph_tools_obj.plot_mesh(tri, shape_expr, tri, image, projShape_neutral)
 
         self.dictionary = {
             'original_image': original_image,
@@ -159,7 +159,7 @@ class Model(QThread):
             'visIdx': pos_est["visIdx"]
         }
         # neutral is the default expression
-        if expression == 'neutral' or expression == 'face':
+        if expression == 'neutral':
             # if 'image_neutral' in self.dictionary:
               #   return self.dictionary['image_neutral']
             # else:
@@ -173,7 +173,7 @@ class Model(QThread):
             return self.apply_expression_modelPreloaded(expression=expression)
 
     def apply_expression_modelPreloaded(self, path_log='log/', expression='angry'):
-        if expression == 'neutral' or expression == 'face:
+        if expression == 'neutral':
             if 'image_neutral' in self.dictionary:
                 return self.dictionary['image_neutral']
             else:
@@ -187,7 +187,7 @@ class Model(QThread):
                                                     self.dictionary['projShape_neutral'][:, 1],
                                                     texture_neutral_model, 600, 600)
 
-                self.dictionary['image_neutral'] = center_image(self.post_processing(image))
+                self.dictionary['image_neutral'] = center_image(post_processing(image))
                 # center image
                 #image = self.overlay_imgs(image, self.dictionary['original_image'])
                 return self.post_processing(centerimage(image))
@@ -234,11 +234,11 @@ class Model(QThread):
         return V
 
     def post_processing(self, image):
-        brightness_val = 1.3
-        color_val = 1.3
+        brightness_val = 1.2
+        color_val = 1.2
         gaussian_val = 0.8
 
-        image = ndimage.gaussian_filter(image, sigma=(0.5, 0.5, 0), order=0)
+        image = ndimage.gaussian_filter(image, sigma=(0.8, 0.8, 0), order=0)
         image = Image.fromarray(image)
 
         # brightness
@@ -257,3 +257,10 @@ class Model(QThread):
         image1 = Image.fromarray(img1)
         image2 = Image.fromarray(img2)
         return np.array(Image.blend(image1, image2, alpha=0.5))
+
+
+
+
+
+
+
