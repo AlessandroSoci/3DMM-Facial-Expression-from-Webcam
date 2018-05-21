@@ -3,8 +3,8 @@ Application to modify the 3D faces
 
 ## Run
 - download the [repository](https://github.com/AlessandroSoci/3DMM-Facial-Expression-from-Webcam.git) (clone or zip download)
-- download extra-files from [drive]()
-- unzip extra-dile and add it on expression_code/data path
+- download extra-files from [drive](https://drive.google.com/drive/u/1/folders/1W5UEDR_ovW8lOFOL3H3gR1e97cARGCBh)
+- unzip extra-files and add it on expression_code/data path
 - run `main.py` or `expression_to_neutral.py`
 
 The scripts will output the same window but with different application dependently if you run `main.py` or `expression_to_neutral.py`.
