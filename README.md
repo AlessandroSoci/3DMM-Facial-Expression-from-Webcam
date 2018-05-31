@@ -54,16 +54,21 @@ On the top there is a Toolbox with witch the user can interact. It has the follo
 The icon allow to take a picture, and so if a face is present in the photo, the application identifies it and calculates
 the landmark face. Now it can create the 3D model with the texture, but only the image 2D will be show on the right size
 of the window. On the top left we have the combo box that allow to choose the expression to apply to subject face.
- After few second the new artificial face will appear.
+After few second the new artificial face will appear.
+Below there is an example.
+ 
+ ![neutral_angry.png](./images/Angry_3DMM.PNG)
+
 
 The biggest problem is the resolution of the image of model. Because to create the 3D morphable model, it's necessary an
-image 256*256, and consequently the texture have low resolution. This problem was partially resolved applying a blur 
-effect on the texture.
+image 256*256, and consequently the texture have low resolution.
 
 ##
 Another application has been developed with the same interface, but with different function. Here the user can obtain
 the own artificial neutral face, having an expression face. Unfortunately the application does not manage to recognize
-the expression of user, but he has to choose the expression on the combo box.
+the expression of user, but he has to choose the expression on the combo box. Below it show an example.
+
+![surprise_neutral.png](./images/face_surprise.PNG)
 
 ## Conclusion
 
