@@ -33,6 +33,8 @@ This involve in a lag and in a slowdown application.
 ## Interface and Description
 To provide a visual feedback to the user, the system implements a simple interface.
 
+![alt text](https://github.com/AlessandroSoci/3DMM-Facial-Expression-from-Webcam/tree/master/images/Interfaccia_3DMM.PNG)
+
 The user will see a live view of the scene on the left size of the window, and on the right part only a simple imagine.
 On the top there is a Toolbox with witch the user can interact. It has the following widget:
 - Slider: to zoom, preset x1.3;
