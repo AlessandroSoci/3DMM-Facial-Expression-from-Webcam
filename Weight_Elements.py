@@ -5,8 +5,8 @@ import h5py
 import pickle
 import sys
 
-def predict(expr):
 
+def predict(expr):
     mat = h5py.File('expression_code/data/processed_ck.mat')
 
     def_coeff = np.array(mat["def_coeff"])
@@ -38,92 +38,87 @@ def sorting_index(vec, indexes):
         indexes[j + 1] = tmp_ind
 
 
+expr = input('digit expression between \nneutral, disgust, surprise, angry, sadness, fear, contempt, happy: \n')
+if expr != "neutral":
+    vec_linear_regression = predict(expr)
+    # print(vec_linear_regression)
+    weight = np.zeros([300, 1])
+    for i in range(0, 300):
+        weight[i] = np.sum(vec_linear_regression[i][:])
 
-expr = input('digit expression between \ndisgust, surprise, angry, sadness, fear, contempt, happy: \n')
-vec_linear_regression = predict(expr)
-# print(vec_linear_regression)
-weight = np.zeros([300, 1])
-for i in range(0, 300):
-    weight[i] = np.sum(vec_linear_regression[i][:])
+    # threshold value
+    value = 0.7
 
-value = 0.7                                     #importance value
-vec_index = np.where(weight[:] >= value)
-vec_value = np.extract(weight[:] >= value, weight)
+    vec_index = np.where(weight[:] >= value)
+    vec_value = np.extract(weight[:] >= value, weight)
 
-sorting_index(vec_value, vec_index[0])
-# print(vec_linear_regression)
-print(vec_value)
-print('Indexes are sort in weight decrescent: \n', vec_index[0])
+    sorting_index(vec_value, vec_index[0])
+    # normalization
+    print('Indexes are sorted in decreasing way of weight: \n', vec_index[0])
+    maxx = np.amax(vec_value)
+    vec_value = vec_value / maxx
+    print('Values are normalized and sorted in decreasing way of weight: \n', vec_value)
 
-input('Push Enter if you want know the neutral weight: \n')
+else:
 
-index_id = []
+    index_id = []
 
-neutral_id = []
-happy_id = []
+    neutral_id = []
+    happy_id = []
 
-count = 0
+    count = 0
 
-# Read file matlab
-f = h5py.File('expression_code/data/processed_ck.mat', 'r')
-# Load all weights face
-def_coeff = f.get('def_coeff')
-def_coeff = np.transpose(np.array(def_coeff))
-labels_id = f.get('labels_id')
-labels_id = np.transpose(np.array(labels_id))
-expr = f.get('labels_expr')
-labels_expr = []
-for j in range(0, 654):
-    st = expr[0][j]
-    obj = f[st]
-    labels_expr.append(''.join(chr(i) for i in obj[:]))
+    # Read file matlab
+    f = h5py.File('expression_code/data/processed_ck.mat', 'r')
+    # Load all weights face
+    def_coeff = f.get('def_coeff')
+    def_coeff = np.transpose(np.array(def_coeff))
+    labels_id = f.get('labels_id')
+    labels_id = np.transpose(np.array(labels_id))
+    expr = f.get('labels_expr')
+    labels_expr = []
+    for j in range(0, 654):
+        st = expr[0][j]
+        obj = f[st]
+        labels_expr.append(''.join(chr(i) for i in obj[:]))
 
-# Build neutral vectors
-for i in range(0, len(labels_expr)):
-    if labels_expr[i] == 'neutral':
-        neutral_id.append(def_coeff[:, i])
-    elif labels_expr[i] == 'happy':
-        happy_id.append(def_coeff[:, i])
+    # Build neutral vectors
+    for i in range(0, len(labels_expr)):
+        if labels_expr[i] == 'neutral':
+            neutral_id.append(def_coeff[:, i])
 
-neutral_id = np.array(neutral_id)
-happy_id = np.array(happy_id)
-max_range_ne = []
-min_range_ne = []
-max_range_ha = []
-min_range_ha = []
-# print(neutral_id.shape)
-# print(np.amax(neutral_id[:, 3]))
-# print(np.amin(neutral_id[:, 3]))
+    neutral_id = np.array(neutral_id)
+    max_range_ne = []
+    min_range_ne = []
 
-for i in range(0, neutral_id.shape[1]):
-    max_range_ne.append(np.amax(neutral_id[:, i]))
-    min_range_ne.append(np.amin(neutral_id[:, i]))
-    max_range_ha.append(np.amax(happy_id[:, i]))
-    min_range_ha.append(np.amin(happy_id[:, i]))
+    for i in range(0, neutral_id.shape[1]):
+        max_range_ne.append(np.amax(neutral_id[:, i]))
+        min_range_ne.append(np.amin(neutral_id[:, i]))
 
-max_range_ne = np.array(max_range_ne)
-min_range_ne = np.array(min_range_ne)
-max_range_ha = np.array(max_range_ha)
-min_range_ha = np.array(min_range_ha)
+    max_range_ne = np.array(max_range_ne)
+    min_range_ne = np.array(min_range_ne)
 
-distance_range_ne = abs(max_range_ne - min_range_ne)
-distance_range_ha = abs(max_range_ha - min_range_ha)
-index_range_ne = []
-index_range_ha = []
-dis_ran_ne = []
-dis_ran_ha = []
+    distance_range_ne = abs(max_range_ne - min_range_ne)
+    index_range_ne = []
+    dis_ran_ne = []
+    tmp_max = 1
 
-for i in range(0, distance_range_ne.shape[0]):
-    if distance_range_ne[i] >= 50:
-        dis_ran_ne.append(distance_range_ne[i])
-        index_range_ne.append(i)
-        # print('range: [', int(min_range[i]), int(max_range[i]), '] \nindex:', i)
-    if distance_range_ha[i] >= 25:
-        dis_ran_ha.append(distance_range_ha[i])
-        index_range_ha.append(i)
-if dis_ran_ne:
-    sorting_index(dis_ran_ne, index_range_ne)
-    # print('Indexes are sort in weight decrescent: \n', index_range_ne)
-if dis_ran_ha:
-    sorting_index(dis_ran_ha, index_range_ha)
-    print('Indexes are sort in weight decrescent: \n', index_range_ha)
+    # threshold value
+    thr = 50
+
+    for i in range(0, distance_range_ne.shape[0]):
+        if distance_range_ne[i] >= thr:
+            dis_ran_ne.append(distance_range_ne[i])
+            index_range_ne.append(i)
+            if tmp_max < distance_range_ne[i]:
+                tmp_max = distance_range_ne[i]
+            # print('range: [', int(min_range[i]), int(max_range[i]), '] \nindex:', i)
+
+    # normalize distance
+    for j in range(0, len(dis_ran_ne)):
+        dis_ran_ne[j] = dis_ran_ne[j] / tmp_max
+
+    if dis_ran_ne:
+        sorting_index(dis_ran_ne, index_range_ne)
+        print('Indexes are sorted in decreasing way of weight: \n', index_range_ne)
+        print('Values are normalized and sorted in decreasing way of weight: \n', dis_ran_ne)
