@@ -84,8 +84,8 @@ live camera and having the model of themselves on the right.
 | ------------------------------------------------------------|:--------------:| --------:|
 | **Python**                                                  |     >= 3       |    Yes   |
 | **Numpy** (Python Package)                                  |Tested on v1.13 |    Yes   |
-| **OpenCV** (Python Package)                                 |Tested on v3    |    Yes   |
-| **Pillow** (Python Package)                                 |Tested on v5.10 |    Yes   |
+| **opencv-python** (Python Package)                                 |Tested on v3    |    Yes   |
+| **pillow** (Python Package)                                 |Tested on v5.10 |    Yes   |
 | **QDarkStyle** (Python Package)                             |Tested on v2.5.1|    Yes   |
 | **dlib** (Python Package)                                   |Tested on v19.10|    Yes   |
 | **face_recognition** (Python Package)                       |Tested on v1.2.2|    Yes   |
