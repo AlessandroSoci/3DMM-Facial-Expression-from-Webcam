@@ -5,6 +5,8 @@ Application to modify the 3D faces
 - download the [repository](https://github.com/AlessandroSoci/3DMM-Facial-Expression-from-Webcam.git) (clone or zip download)
 - download extra-files from [drive](https://drive.google.com/drive/u/1/folders/1W5UEDR_ovW8lOFOL3H3gR1e97cARGCBh)
 - unzip extra-files and add it on expression_code/data path
+- download landmarks predictor from [TensorFace](https://github.com/AKSHAYUBHAT/TensorFace/blob/master/openface/models/dlib/shape_predictor_68_face_landmarks.dat)
+- add it on the expression code folder
 - run `main.py` or `expression_to_neutral.py`
 
 The scripts will output the same window but with different application dependently if you run `main.py` or `expression_to_neutral.py`.
@@ -91,3 +93,6 @@ live camera and having the model of themselves on the right.
 | **matplotlib** (Python Package)                             |Tested on v2.2.2|    Yes   |
 | **scipy** (Python Package)                                  |Tested on v1.1.0|    Yes   |
 | **tensorflow** (Python Package)                             |Tested on v1.7.0|    Yes   |
+| **imutils** (Python Package)                                |Tested on v0.4.6|    Yes   |
+| **keras** (Python Package)                                  |Tested on v2.2.0|    Yes   |
+| **scikit learn** (Python Package)                           |Tested on v0.19.1|   Yes   |
