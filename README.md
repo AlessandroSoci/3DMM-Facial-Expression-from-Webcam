@@ -91,5 +91,5 @@ live camera and having the model of themselves on the right.
 | **matplotlib** (Python Package)                             |Tested on v2.2.2|    Yes   |
 | **scipy** (Python Package)                                  |Tested on v1.1.0|    Yes   |
 | **tensorflow** (Python Package)                             |Tested on v1.7.0|    Yes   |
-| **math** (Python Packge)                                    |Teste on v9     |    Yes   |
+| **math** (Python Packge)                                    |Tested on v9     |    Yes   |
 
