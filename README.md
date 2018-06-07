@@ -88,11 +88,11 @@ live camera and having the model of themselves on the right.
 | **Pillow** (Python Package)                                 |Tested on v5.10 |    Yes   |
 | **QDarkStyle** (Python Package)                             |Tested on v2.5.1|    Yes   |
 | **dlib** (Python Package)                                   |Tested on v19.10|    Yes   |
-| **face recognition** (Python Package)                       |Tested on v1.2.2|    Yes   |
+| **face_recognition** (Python Package)                       |Tested on v1.2.2|    Yes   |
 | **h5py** (Python Package)                                   |Tested on v2.7  |    Yes   |
 | **matplotlib** (Python Package)                             |Tested on v2.2.2|    Yes   |
 | **scipy** (Python Package)                                  |Tested on v1.1.0|    Yes   |
 | **tensorflow** (Python Package)                             |Tested on v1.7.0|    Yes   |
 | **imutils** (Python Package)                                |Tested on v0.4.6|    Yes   |
 | **keras** (Python Package)                                  |Tested on v2.2.0|    Yes   |
-| **scikit learn** (Python Package)                           |Tested on v0.19.1|   Yes   |
+| **sklearn** (Python Package)                                |Tested on v0.19.1|   Yes   |
