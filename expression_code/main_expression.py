@@ -204,9 +204,14 @@ class Model(QThread):
         vect, nameExpr = predict_expr.create_expr(expression)
         # print(vect.shape)
         # print(nameExpr)
-        shape_expressional_model = np.transpose(
-            _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']),
-                                           self.dictionary['components'], vect, self.ex_to_me))
+        if self.ex_to_me:
+            shape_expressional_model = np.transpose(
+                _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']),
+                                               self.dictionary['components'], -vect, self.ex_to_me))
+        else:
+            shape_expressional_model = np.transpose(
+                _3DMM_obj.deform_3D_shape_fast(np.transpose(self.dictionary['shape_neutral']),
+                                               self.dictionary['components'], vect, self.ex_to_me))
         self.progress_bar.emit()
         # create texture for expressional model
         projShape_expressional_model = np.transpose(
