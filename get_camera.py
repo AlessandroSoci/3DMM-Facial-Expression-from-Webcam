@@ -2,6 +2,7 @@ from PyQt5.QtCore import pyqtSignal, QThread
 
 import numpy as np
 import cv2
+import sys
 
 
 class Camera(QThread):
@@ -24,6 +25,7 @@ class Camera(QThread):
         self.active = False
         if self.isRunning():
             self.terminate()
+            sys.exit('Error')
 
     def loop(self):
         """Method called to initialize and start the face recognition Thread"""
@@ -68,5 +70,5 @@ class Camera(QThread):
                 # Store the current image
                 self.currentFrame = frame
                 self.updated.emit()
-        cv2.release()
-
+        video_capture.release()
+        cv2.destroyAllWindows()
