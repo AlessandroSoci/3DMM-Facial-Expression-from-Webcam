@@ -308,10 +308,7 @@ class graphic_tools:
         sumVec = tmp_eigen.sum(axis=1)
         sumVec = sumVec.reshape((sumVec.shape[0],1), order='F')
         sumMat = np.reshape(np.transpose(sumVec), (3,dim), order='F')
-        if ex_to_ne:
-            return mean - sumMat
-        else:
-            return mean + sumMat
+        return mean + sumMat
 
     def cov(self,X):
         """
@@ -465,22 +462,3 @@ class graphic_tools:
         [jx,jy] = np.meshgrid(sizep-np.arange(0,sizep+1)+1, sizep-np.arange(0,sizep+1)+1)
         jind = (jx.flatten()-1)+(jy.flatten()-1)*(sizep+1)+1
         return np.reshape(lambda1, (lambda1.shape[0], 1)), np.reshape(lambda2, (lambda2.shape[0], 1)), np.reshape(lambda3, (lambda3.shape[0], 1)), jind
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
