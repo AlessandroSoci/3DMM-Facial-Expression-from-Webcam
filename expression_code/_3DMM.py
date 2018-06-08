@@ -138,10 +138,7 @@ class _3DMM:
         tmp_eigen = alpha_full*eigenvecs
         sumVec = np.sum(tmp_eigen, axis=1)  # somma attraverso le righe
         sumMat = np.reshape(np.transpose(sumVec), (3, dim), order='F')
-        if ex_to_me:
-            return mean_face - sumMat
-        else:
-            return mean_face + sumMat
+        return mean_face + sumMat
 
 
     def estimateVis_vertex(self, vertex, R, C_dist, r):
