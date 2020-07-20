@@ -9,12 +9,12 @@ Application to modify the faces in 3D
 - add it on the expression code folder
 - run `main.py` or `expression_to_neutral.py`
 
-The scripts will output an identical window either for you run `main.py` or for `expression_to_neutral.py`, but the gol are different.
+The scripts will output an identical window either for you run `main.py` or for `expression_to_neutral.py`, but the goals are different.
 
 ## Introduction
-The main project is the creation of an application to generate expressive 3D faces starting from a photo of neutral face as a base. 
+The main project is the creation of an application to generate expressive 3D faces starting from a photo of the neutral face as a base. 
 
-Furthermore the application can show a neutral face, having an expressive face as a base, but it is only an experiment,
+Furthermore, the application can show a neutral face, having an expressive face as a base, but it is only an experiment,
 and we did not spend a lot of time with it.
 
 ## Goals
@@ -25,22 +25,22 @@ and we did not spend a lot of time with it.
 
 ## Technologies
 - The interface is developed with the PyQt Framework using Python.
-- OpenCV allow to have control on camera.
+- OpenCV allows having control of the camera.
 - The face landmark are calculated thanks to [Python packages](https://github.com/ageitgey/face_recognition).
 - 3D Morphable Model to create the image.
 
-The process for calculating the landmark face has and the building of 3D model have a significant computational cost 
-This involve in a lag and in a slowdown application.
+The process for calculating the landmark face has and the building of 3D model has a high computational cost 
+This involves a lag and in a slowdown application.
 
 ## Interface and Description
 To provide a visual feedback to the user, the system implements a simple interface.
 
 ![Interfaccia_3DMM.png](./images/Interfaccia_3DMM.PNG)
 
-The user will see a live view of the scene on the left size of the window, and on the right part only a simple imagine.
-On the top there is a Toolbox with witch the user can interact. It has the following widget:
+The user will see a live view of the scene on the left side of the window, and on the right part, only a simple image.
+On the top, there is a Toolbox with which the user can interact. It has the following widget:
 - Slider: to zoom, preset x1.3;
-- Icon camera: to take picture;
+- Icon camera: to take a photo;
 - Progress Bar: shows the percentage of the work;
 - Combo Box: possibility to choose the expression:
     1. neutral
@@ -53,10 +53,10 @@ On the top there is a Toolbox with witch the user can interact. It has the follo
     8. fear
 
 ###
-The icon allows to take a picture. If a face is present in the photo, the application identifies it and computes
-the landmark face. Now it can create the 3D model with the texture, but only the image 2D will be show on the right size
-of the window. On the top left we have the combo box that allow to choose the expression to apply to subject face.
-After few second the new artificial face will appear.
+The icon allows taking a picture. If a face is present in the photo, the application identifies it and computes
+the landmark face. Now it can create the 3D model with the texture, but only the image 2D will be shown on the right side
+of the window. On the top left, we have the combo box that allows choosing the expression to apply to the subject face.
+After a few seconds, the new artificial face will appear.
 Below an example is shown: from neutral to angry.
  
  ![neutral_angry.png](./images/Angry_3DMM.PNG)
@@ -66,16 +66,16 @@ The biggest problem is the resolution of the image of the 3D model. Because to c
 image 256*256, and consequently the texture has low resolution.
 
 ##
-Another application has been developed with the same interface, but with different function. Here the user can obtain
-the own artificial neutral face, having an expression face. Unfortunately the application does not manage to recognize
-the expression of user, but the user has to choose the expression on the combo box. Below it shows an example, from surprise to neutral.
+Another application has been developed with the same interface, but with a different function. Here the user can obtain
+the own artificial neutral face, having an expressive face. Unfortunately, the application does not manage to recognize
+the expression of the user, but the user has to choose the expression on the combo box. Below it shows an example, from surprise to neutral.
 
 ![surprise_neutral.png](./images/face_surprise.PNG)
 
 ## Conclusion
 
-The main application shows the hypothetical expression face of the subject. This project want to help people can't
-express themselves through expression face, like autistics. They make practice, watching themselves on the
+The main application shows the hypothetical expression face of the subject. This project wants to help people who can't
+express themselves through expression face, like autistics. They do practice, watching themselves on the
 live camera on the left and having the model of themselves on the right.
 
 ## Requirements
